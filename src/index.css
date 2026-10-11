@@ -1,0 +1,460 @@
+@import "tailwindcss";
+
+/* ============================================
+   CUSTOM CSS PROPERTIES & BASE STYLES
+   ============================================ */
+
+@theme {
+  --color-bg-primary: #0a0a0f;
+  --color-bg-card: #111118;
+  --color-border: #1e1e2e;
+  --color-border-hover: #2e2e4e;
+  --color-text-primary: #f0f0f5;
+  --color-text-secondary: #8a8a9a;
+  --color-text-muted: #4a4a5a;
+  --color-accent: #6366f1;
+  --color-accent-2: #8b5cf6;
+}
+
+/* ============================================
+   BASE STYLES
+   ============================================ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) var(--color-bg-primary);
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    sans-serif;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border-hover);
+}
+
+/* ============================================
+   SELECTION STYLES
+   ============================================ */
+
+::selection {
+  background: rgba(99, 102, 241, 0.3);
+  color: var(--color-text-primary);
+}
+
+/* ============================================
+   SCROLL REVEAL ANIMATIONS
+   ============================================ */
+
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.reveal-delay-1 {
+  transition-delay: 0.1s;
+}
+
+.reveal-delay-2 {
+  transition-delay: 0.2s;
+}
+
+.reveal-delay-3 {
+  transition-delay: 0.3s;
+}
+
+.reveal-delay-4 {
+  transition-delay: 0.4s;
+}
+
+/* ============================================
+   HERO 3D GEOMETRIC VISUAL
+   ============================================ */
+
+.hero-3d-container {
+  perspective: 800px;
+  width: 320px;
+  height: 320px;
+  position: relative;
+}
+
+@media (min-width: 768px) {
+  .hero-3d-container {
+    width: 420px;
+    height: 420px;
+  }
+}
+
+.hero-3d-scene {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  animation: float 6s ease-in-out infinite;
+}
+
+.hero-3d-panel {
+  position: absolute;
+  border-radius: 16px;
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  background: linear-gradient(
+    135deg,
+    rgba(99, 102, 241, 0.05) 0%,
+    rgba(139, 92, 246, 0.03) 100%
+  );
+  backdrop-filter: blur(4px);
+}
+
+.hero-3d-panel-1 {
+  width: 200px;
+  height: 200px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotateX(15deg) rotateY(-15deg) translateZ(40px);
+  animation: panelFloat1 8s ease-in-out infinite;
+}
+
+.hero-3d-panel-2 {
+  width: 160px;
+  height: 160px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotateX(-10deg) rotateY(20deg) translateZ(-20px);
+  border-color: rgba(139, 92, 246, 0.12);
+  background: linear-gradient(
+    225deg,
+    rgba(139, 92, 246, 0.06) 0%,
+    rgba(99, 102, 241, 0.02) 100%
+  );
+  animation: panelFloat2 10s ease-in-out infinite;
+}
+
+.hero-3d-panel-3 {
+  width: 120px;
+  height: 120px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotateX(5deg) rotateY(-25deg) translateZ(80px);
+  border-color: rgba(99, 102, 241, 0.08);
+  background: linear-gradient(
+    45deg,
+    rgba(99, 102, 241, 0.04) 0%,
+    rgba(139, 92, 246, 0.06) 100%
+  );
+  animation: panelFloat3 12s ease-in-out infinite;
+}
+
+/* Wireframe cube */
+.hero-wireframe {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  top: 50%;
+  left: 50%;
+  transform-style: preserve-3d;
+  transform: translate(-50%, -50%);
+  animation: cubeRotate 20s linear infinite;
+}
+
+.hero-wireframe-edge {
+  position: absolute;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 4px;
+}
+
+/* Glow orb */
+.hero-glow {
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    circle,
+    rgba(99, 102, 241, 0.12) 0%,
+    rgba(139, 92, 246, 0.05) 40%,
+    transparent 70%
+  );
+  border-radius: 50%;
+  filter: blur(40px);
+  animation: glowPulse 4s ease-in-out infinite;
+}
+
+/* Floating dots */
+.hero-dot {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: rgba(99, 102, 241, 0.4);
+  border-radius: 50%;
+  animation: dotFloat 5s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes panelFloat1 {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) rotateX(15deg) rotateY(-15deg) translateZ(40px);
+  }
+  50% {
+    transform: translate(-50%, -50%) rotateX(12deg) rotateY(-12deg) translateZ(50px);
+  }
+}
+
+@keyframes panelFloat2 {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) rotateX(-10deg) rotateY(20deg) translateZ(-20px);
+  }
+  50% {
+    transform: translate(-50%, -50%) rotateX(-8deg) rotateY(15deg) translateZ(-10px);
+  }
+}
+
+@keyframes panelFloat3 {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) rotateX(5deg) rotateY(-25deg) translateZ(80px);
+  }
+  50% {
+    transform: translate(-50%, -50%) rotateX(8deg) rotateY(-20deg) translateZ(90px);
+  }
+}
+
+@keyframes cubeRotate {
+  from {
+    transform: translate(-50%, -50%) rotateX(0deg) rotateY(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotateX(360deg) rotateY(360deg);
+  }
+}
+
+@keyframes glowPulse {
+  0%,
+  100% {
+    opacity: 0.6;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+}
+
+@keyframes dotFloat {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translateY(-10px) scale(1.2);
+    opacity: 0.8;
+  }
+}
+
+/* ============================================
+   GRADIENT TEXT UTILITY
+   ============================================ */
+
+.gradient-text {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6, #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ============================================
+   BUTTON STYLES
+   ============================================ */
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 2rem;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  border: none;
+  border-radius: 9999px;
+  font-weight: 500;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #818cf8, #a78bfa);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  border-radius: inherit;
+}
+
+.btn-primary:hover::before {
+  opacity: 1;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(99, 102, 241, 0.3);
+}
+
+.btn-primary span {
+  position: relative;
+  z-index: 1;
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 2rem;
+  background: transparent;
+  color: #f0f0f5;
+  border: 1px solid #2e2e4e;
+  border-radius: 9999px;
+  font-weight: 500;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  text-decoration: none;
+}
+
+.btn-secondary:hover {
+  border-color: #6366f1;
+  color: #a5b4fc;
+  transform: translateY(-2px);
+  background: rgba(99, 102, 241, 0.05);
+}
+
+/* ============================================
+   CARD GLASS EFFECT
+   ============================================ */
+
+.glass-card {
+  background: rgba(17, 17, 24, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card:hover {
+  border-color: var(--color-border-hover);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+}
+
+/* ============================================
+   NOISE TEXTURE OVERLAY (subtle)
+   ============================================ */
+
+.noise-overlay::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.015;
+  z-index: 9999;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+/* ============================================
+   REDUCED MOTION
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .hero-3d-scene,
+  .hero-3d-panel-1,
+  .hero-3d-panel-2,
+  .hero-3d-panel-3,
+  .hero-wireframe,
+  .hero-glow,
+  .hero-dot {
+    animation: none !important;
+  }
+
+  .btn-primary:hover,
+  .btn-secondary:hover,
+  .glass-card:hover {
+    transform: none;
+  }
+
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================
+   FOCUS STYLES FOR ACCESSIBILITY
+   ============================================ */
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
