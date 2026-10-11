@@ -1,6 +1,6 @@
 import React from 'react';
 import { Award, ExternalLink } from 'lucide-react';
-import { certificationsData, sectionNumber } from '../data/config';
+import { certificationsData } from '../data/config';
 import { useInView } from '../hooks/useInView';
 import SectionHeader from './SectionHeader';
 
@@ -12,7 +12,7 @@ export default function Certifications() {
   return (
     <section id="certifications" ref={ref} className="py-20 md:py-28 px-6">
       <div className="max-w-5xl mx-auto">
-        <SectionHeader index={sectionNumber('certifications')} label="Certifications" title="Certifications" isInView={isInView} />
+        <SectionHeader title="Certifications" isInView={isInView} />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {certificationsData.map((cert, i) => {

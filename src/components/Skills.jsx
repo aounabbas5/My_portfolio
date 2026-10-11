@@ -1,6 +1,6 @@
 import React, { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Code, Terminal } from 'lucide-react';
-import { skillsData, sectionNumber } from '../data/config';
+import { skillsData } from '../data/config';
 import { useInView } from '../hooks/useInView';
 import { getCapabilities } from '../hooks/useCapabilities';
 import SectionHeader from './SectionHeader';
@@ -35,8 +35,6 @@ export default function Skills() {
     <section id="skills" ref={ref} className="py-20 md:py-28 px-6">
       <div className="max-w-6xl mx-auto">
         <SectionHeader
-          index={sectionNumber('skills')}
-          label="Skills"
           title="Skills & Technologies"
           subtitle={enable3D ? `${touch ? 'Tap' : 'Hover'} a node to inspect it. Dashed outlines are things I am learning.` : undefined}
           isInView={isInView}

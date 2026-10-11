@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { Clock, ArrowUpRight } from 'lucide-react';
-import { projectsData, contactData, sectionNumber } from '../data/config';
+import { projectsData, contactData } from '../data/config';
 import { useInView } from '../hooks/useInView';
 import { addRipple } from '../hooks/ripple';
 import SectionHeader from './SectionHeader';
@@ -141,8 +141,6 @@ export default function Projects() {
     <section id="projects" ref={ref} className="py-20 md:py-28 px-6">
       <div className="max-w-6xl mx-auto">
         <SectionHeader
-          index={sectionNumber('projects')}
-          label="Projects"
           title="Featured Projects"
           subtitle="Select a project to see the details."
           isInView={isInView}

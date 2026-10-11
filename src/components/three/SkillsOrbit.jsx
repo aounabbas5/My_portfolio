@@ -41,6 +41,18 @@ const ICONS = {
       <path d='M25 21V43M25 31L40 38'/></g>
     <g fill='${INK}'><circle cx='25' cy='21' r='4.500'/><circle cx='25' cy='43' r='4.500'/><circle cx='40' cy='38' r='4.500'/></g>`,
   github: `<g transform='translate(4 4) scale(2.2)' fill='${GOLD}'><path d='M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z'/></g>`,
+  'claude code': `<g fill='${GOLD}'>
+      <rect x='29.5' y='6' width='5' height='52' rx='2.5'/>
+      <rect x='29.5' y='6' width='5' height='52' rx='2.5' transform='rotate(45 32 32)'/>
+      <rect x='29.5' y='6' width='5' height='52' rx='2.5' transform='rotate(90 32 32)'/>
+      <rect x='29.5' y='6' width='5' height='52' rx='2.5' transform='rotate(135 32 32)'/></g>
+    <circle cx='32' cy='32' r='6' fill='${INK}'/><circle cx='32' cy='32' r='3' fill='${MINT}'/>`,
+  antigravity: `<g fill='none' stroke='${MINT}' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'>
+      <path d='M32 8L50 50H14Z'/><path d='M32 52V20M24 28L32 20L40 28' stroke='${GOLD}'/></g>
+    <circle cx='32' cy='57' r='2.4' fill='${GOLD}'/>`,
+  vercel: `<path d='M32 9L58 54H6Z' fill='${GOLD}'/>`,
+  mongodb: `<path d='M32 4C26 14 18 22 18 36C18 47 24 54 32 58C40 54 46 47 46 36C46 22 38 14 32 4Z' fill='${MINT}'/>
+    <path d='M32 14V58' stroke='${INK}' stroke-width='3' stroke-linecap='round'/>`,
   'vs code': `<path d='M44 7L57 13V51L44 57L20 36L10 44L5 40L16 32L5 24L10 20L20 28Z' fill='${GOLD}'/>
     <path d='M44 20V44L28 32Z' fill='${INK}'/>`,
 };
@@ -79,6 +91,91 @@ function glowTexture() {
   return glowTex;
 }
 
+// Circuit-style pattern wrapped around the planet: traces with 45° bends that
+// end in small nodes, plus fine latitude lines. Drawn in white and tinted by
+// the material, and repeated at the seam so it wraps without a visible join.
+let patternTex;
+function planetPattern() {
+  if (patternTex) return patternTex;
+  const W = 1024;
+  const H = 512;
+  const c = document.createElement('canvas');
+  c.width = W;
+  c.height = H;
+  const g = c.getContext('2d');
+  const r = rng(5);
+  g.lineCap = 'round';
+  g.lineJoin = 'round';
+  g.strokeStyle = '#fff';
+  g.fillStyle = '#fff';
+  g.shadowColor = '#fff';
+
+  // fine dashed latitude lines
+  g.shadowBlur = 0;
+  g.lineWidth = 1.2;
+  g.globalAlpha = 0.35;
+  [112, 184, 256, 328, 400].forEach((y, i) => {
+    g.setLineDash(i % 2 ? [3, 13] : [26, 12]);
+    g.beginPath();
+    g.moveTo(0, y);
+    g.lineTo(W, y);
+    g.stroke();
+  });
+  g.setLineDash([]);
+
+  // circuit traces
+  const traces = Array.from({ length: 30 }, () => {
+    let x = r() * W;
+    let y = 90 + r() * (H - 180);
+    const pts = [[x, y]];
+    const dir = r() < 0.5 ? -1 : 1;
+    const bends = 1 + Math.floor(r() * 3);
+    for (let b = 0; b < bends; b++) {
+      x += dir * (36 + r() * 110);
+      pts.push([x, y]);
+      const d = 16 + r() * 30;
+      const up = r() < 0.5 ? -1 : 1;
+      if (y + up * d > 70 && y + up * d < H - 70) {
+        x += dir * d;
+        y += up * d;
+        pts.push([x, y]);
+      }
+    }
+    x += dir * (20 + r() * 60);
+    pts.push([x, y]);
+    return { pts, ring: r() < 0.45 };
+  });
+  for (const off of [-W, 0, W]) {
+    for (const t of traces) {
+      g.globalAlpha = 0.9;
+      g.shadowBlur = 7;
+      g.lineWidth = 2.2;
+      g.beginPath();
+      t.pts.forEach(([x, y], i) => (i ? g.lineTo(x + off, y) : g.moveTo(x + off, y)));
+      g.stroke();
+      const [sx, sy] = t.pts[0];
+      const [ex, ey] = t.pts[t.pts.length - 1];
+      g.beginPath();
+      g.arc(sx + off, sy, 3.4, 0, Math.PI * 2);
+      g.fill();
+      g.beginPath();
+      g.arc(ex + off, ey, 4.6, 0, Math.PI * 2);
+      g.fill();
+      if (t.ring) {
+        g.lineWidth = 1.4;
+        g.beginPath();
+        g.arc(ex + off, ey, 9.5, 0, Math.PI * 2);
+        g.stroke();
+      }
+    }
+  }
+  patternTex = new THREE.CanvasTexture(c);
+  patternTex.colorSpace = THREE.SRGBColorSpace;
+  patternTex.wrapS = THREE.RepeatWrapping;
+  patternTex.anisotropy = 8;
+  return patternTex;
+}
+
 // Deterministic PRNG so the particle field is identical between renders.
 function rng(seed) {
   let a = seed;
@@ -95,8 +192,8 @@ function rng(seed) {
 /**
  * Emerald glass planet with champagne rings; the skills revolve around it as
  * medallions. Name tags are DOM elements this component repositions each frame
- * (projected from 3D) and keeps apart from one another, so text stays crisp
- * and readable and no extra React roots are created.
+ * (projected from 3D) so each stays locked under its medallion; text stays
+ * crisp and no extra React roots are created.
  */
 function Orbit({ skills, labels, hovered }) {
   const { mobile } = getCapabilities();
@@ -107,6 +204,8 @@ function Orbit({ skills, labels, hovered }) {
   const coreGlow = useRef();
   const coreWire = useRef();
   const rimShell = useRef();
+  const patternA = useRef();
+  const patternB = useRef();
   const ringGroupA = useRef();
   const ringGroupB = useRef();
   const beads = useRef([]);
@@ -122,6 +221,7 @@ function Orbit({ skills, labels, hovered }) {
   const tmp2 = useMemo(() => new THREE.Vector3(), []);
   const textures = useMemo(() => skills.map((s) => iconTexture(s.name)), [skills]);
   const glow = useMemo(() => glowTexture(), []);
+  const pattern = useMemo(() => planetPattern(), []);
 
   // comet trails behind every medallion (fade to nothing)
   const trails = useMemo(() => {
@@ -174,7 +274,7 @@ function Orbit({ skills, labels, hovered }) {
     // fit the whole orbit into the panel (narrow phones shrink it)
     const visH = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.position.length();
     const visW = visH * (size.width / size.height);
-    const fit = clamp(visW / 8.4, 0.5, 1.15);
+    const fit = clamp(visW / 9.2, 0.5, 1.15);
     world.current.scale.setScalar(damp(world.current.scale.x, fit, 6, dt));
     world.current.position.y = Math.sin(t * 0.8) * 0.07; // gentle floating
 
@@ -187,11 +287,14 @@ function Orbit({ skills, labels, hovered }) {
     planet.current.rotation.x = Math.sin(t * 0.26 + 1) * 0.1;
     core.current.rotation.y = -Math.sin(t * 0.3) * 0.55;
     core.current.rotation.x = Math.cos(t * 0.24) * 0.2;
+    patternA.current.rotation.y += dt * 0.1;
+    patternB.current.rotation.y -= dt * 0.06;
     const breathe = 0.5 + 0.5 * Math.sin(t * 1.1);
     coreGlow.current.scale.setScalar(1 + breathe * 0.1);
     coreGlow.current.material.opacity = 0.28 + breathe * 0.2;
-    coreWire.current.opacity = 0.3 + breathe * 0.22;
+    coreWire.current.opacity = 0.05 + breathe * 0.05;
     rimShell.current.material.opacity = 0.16 + breathe * 0.08;
+    patternA.current.material.opacity = 0.78 + breathe * 0.2;
     coreLight.current.intensity = 4 + breathe * 3;
 
     // rings sway in 3D; beads travel along them
@@ -227,9 +330,9 @@ function Orbit({ skills, labels, hovered }) {
     phase.current += dt * 0.17 * speed.current;
 
     const n = skills.length;
-    const items = [];
     nodes.current.forEach((node, i) => {
       if (!node) return;
+      const skill = skills[i];
       const a = phase.current + (i / n) * Math.PI * 2;
       node.position.set(Math.cos(a) * ORBIT_A, 0, Math.sin(a) * ORBIT_B);
       node.lookAt(camera.position); // medallions always face the viewer
@@ -255,7 +358,7 @@ function Orbit({ skills, labels, hovered }) {
       tp.needsUpdate = true;
       line.material.opacity = 0.25 + depth * 0.65;
 
-      // where the name tag goes (under the medallion)
+      // name tag: locked directly under its medallion, so it only moves with it
       node.getWorldPosition(tmp);
       tmp2.copy(tmp);
       tmp2.y += MEDAL_R * node.scale.x * world.current.scale.x;
@@ -264,58 +367,20 @@ function Orbit({ skills, labels, hovered }) {
       const radiusPx = Math.abs(tmp2.y - tmp.y) * 0.5 * size.height;
       const el = labels.current[i];
       if (el) {
-        const w = el.offsetWidth;
-        const h = el.offsetHeight;
-        const half = w / 2 + 6;
-        items.push({
-          i,
-          el,
-          w,
-          h,
-          depth,
-          isHover,
-          cx: (tmp.x * 0.5 + 0.5) * size.width,
-          cy: (-tmp.y * 0.5 + 0.5) * size.height,
-          r: radiusPx,
-          x: clamp((tmp.x * 0.5 + 0.5) * size.width, half, size.width - half),
-          y: (-tmp.y * 0.5 + 0.5) * size.height + radiusPx + 14 + h * 0.5,
-        });
+        const x = (tmp.x * 0.5 + 0.5) * size.width;
+        const y = (-tmp.y * 0.5 + 0.5) * size.height + radiusPx + 16;
+        const learning = skill.level === 'learning';
+        const narrow = size.width < 420;
+        el.style.fontSize = narrow ? '9.5px' : '12px';
+        el.style.padding = narrow ? '1px 7px' : '';
+        el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`;
+        // on narrow panels, only the front half of the orbit shows names (the back ones are dim anyway)
+        el.style.opacity = isHover ? 1 : narrow && depth < 0.62 ? 0 : 0.22 + depth * 0.78;
+        el.style.zIndex = isHover ? 5 : Math.round(depth * 4);
+        el.style.borderColor = isHover || learning ? THEME.champagneGold : THEME.darkSage;
+        el.style.boxShadow = isHover ? '0 0 14px rgba(231,211,161,0.45)' : 'none';
       }
     });
-
-    // keep name tags readable: nearer tags win; others step clear of tags and medallions
-    items.sort((p, q) => q.depth - p.depth);
-    const placed = [];
-    for (const it of items) {
-      for (let pass = 0; pass < 4; pass++) {
-        let moved = false;
-        for (const o of placed) {
-          if (Math.abs(it.x - o.x) < (it.w + o.w) / 2 + 4 && Math.abs(it.y - o.y) < (it.h + o.h) / 2 + 2) {
-            it.y = o.y + (it.h + o.h) / 2 + 3;
-            moved = true;
-          }
-        }
-        for (const m of items) {
-          if (m.i === it.i) continue;
-          if (Math.abs(it.x - m.cx) < it.w / 2 + m.r && Math.abs(it.y - m.cy) < it.h / 2 + m.r) {
-            it.y = m.cy + m.r + it.h / 2 + 4;
-            moved = true;
-          }
-        }
-        if (!moved) break;
-      }
-      placed.push(it);
-    }
-    for (const it of items) {
-      const { el } = it;
-      const learning = skills[it.i].level === 'learning';
-      el.style.fontSize = size.width < 420 ? '10px' : '12px';
-      el.style.transform = `translate(${it.x}px, ${it.y}px) translate(-50%, -50%)`;
-      el.style.opacity = it.isHover ? 1 : 0.22 + it.depth * 0.78;
-      el.style.zIndex = it.isHover ? 5 : Math.round(it.depth * 4);
-      el.style.borderColor = it.isHover ? THEME.champagneGold : learning ? THEME.champagneGold : THEME.darkSage;
-      el.style.boxShadow = it.isHover ? '0 0 14px rgba(231,211,161,0.45)' : 'none';
-    }
   });
 
   const hover = (i) => ({
@@ -367,6 +432,7 @@ function Orbit({ skills, labels, hovered }) {
               clearcoatRoughness={0.04}
               transparent
               opacity={0.7}
+              depthWrite={false}
               envMapIntensity={2.4}
             />
           </mesh>
@@ -388,6 +454,15 @@ function Orbit({ skills, labels, hovered }) {
           <mesh ref={coreGlow}>
             <sphereGeometry args={[0.5, 32, 32]} />
             <meshBasicMaterial color={THEME.emeraldGlow} transparent opacity={0.35} blending={THREE.AdditiveBlending} depthWrite={false} />
+          </mesh>
+          {/* patterns: gold circuit lines on the surface, a mint layer deeper inside */}
+          <mesh ref={patternB} rotation={[0.3, 0, 0.2]}>
+            <sphereGeometry args={[0.93, 48, 48]} />
+            <meshBasicMaterial map={pattern} color={MINT} transparent opacity={0.45} blending={THREE.AdditiveBlending} depthWrite={false} side={THREE.DoubleSide} />
+          </mesh>
+          <mesh ref={patternA}>
+            <sphereGeometry args={[1.106, 64, 64]} />
+            <meshBasicMaterial map={pattern} color={THEME.champagneGold} transparent opacity={0.85} blending={THREE.AdditiveBlending} depthWrite={false} />
           </mesh>
         </group>
         {/* soft rim light around the glass */}

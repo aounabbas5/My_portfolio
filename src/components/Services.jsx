@@ -1,12 +1,12 @@
 import React from 'react';
-import { Building2, User, Rocket, RefreshCw, ArrowRight } from 'lucide-react';
-import { servicesData, sectionNumber } from '../data/config';
+import { Building2, User, Rocket, RefreshCw, LayoutDashboard, ArrowRight } from 'lucide-react';
+import { servicesData } from '../data/config';
 import { useInView } from '../hooks/useInView';
 import { addRipple } from '../hooks/ripple';
 import SectionHeader from './SectionHeader';
 import Tilt from './Tilt';
 
-const iconMap = { Building2, User, Rocket, RefreshCw };
+const iconMap = { Building2, User, Rocket, RefreshCw, LayoutDashboard };
 
 export default function Services() {
   const [ref, isInView] = useInView({ threshold: 0.1 });
@@ -14,16 +14,16 @@ export default function Services() {
   return (
     <section id="services" ref={ref} className="py-20 md:py-28 px-6">
       <div className="max-w-6xl mx-auto">
-        <SectionHeader index={sectionNumber('services')} label="Services" title={servicesData.headline} isInView={isInView} />
+        <SectionHeader title={servicesData.headline} isInView={isInView} />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="flex flex-wrap justify-center gap-6">
           {servicesData.services.map((service, index) => {
             const Icon = iconMap[service.icon] || Building2;
             return (
               <div
                 key={service.title}
                 style={{ transitionDelay: `${index * 90}ms` }}
-                className={`transition-all duration-700 ${
+                className={`w-full sm:w-[calc(50%-0.75rem)] lg:w-[calc(33.333%-1rem)] transition-all duration-700 ${
                   isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
                 }`}
               >

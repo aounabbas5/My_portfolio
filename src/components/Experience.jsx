@@ -1,6 +1,6 @@
 import React from 'react';
 import { Briefcase, Users } from 'lucide-react';
-import { experienceData, leadershipData, sectionNumber } from '../data/config';
+import { experienceData, leadershipData } from '../data/config';
 import { useInView } from '../hooks/useInView';
 import SectionHeader from './SectionHeader';
 
@@ -12,7 +12,7 @@ export default function Experience() {
   return (
     <section id="experience" ref={ref} className="py-20 md:py-28 px-6">
       <div className="max-w-4xl mx-auto">
-        <SectionHeader index={sectionNumber('experience')} label="Experience" title="Experience" isInView={isInView} />
+        <SectionHeader title="Experience" isInView={isInView} />
 
         <div className="space-y-6">
           {experienceData.map((item, i) => (

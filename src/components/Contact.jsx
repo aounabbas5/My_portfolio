@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Mail, Send, MapPin, MessageSquare } from 'lucide-react';
-import { contactData, sectionNumber } from '../data/config';
+import { contactData } from '../data/config';
 import { useInView } from '../hooks/useInView';
 import SectionHeader from './SectionHeader';
 import { GithubIcon as Github, LinkedinIcon as Linkedin } from './icons';
@@ -51,8 +51,6 @@ export default function Contact() {
     <section id="contact" ref={ref} className="py-20 md:py-28 px-6">
       <div className="max-w-6xl mx-auto">
         <SectionHeader
-          index={sectionNumber('contact')}
-          label="Contact"
           title={contactData.headline}
           subtitle={contactData.description}
           isInView={isInView}

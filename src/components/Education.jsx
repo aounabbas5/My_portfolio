@@ -1,6 +1,6 @@
 import React from 'react';
 import { GraduationCap } from 'lucide-react';
-import { educationData, sectionNumber } from '../data/config';
+import { educationData } from '../data/config';
 import { useInView } from '../hooks/useInView';
 import SectionHeader from './SectionHeader';
 
@@ -12,7 +12,7 @@ export default function Education() {
   return (
     <section id="education" ref={ref} className="py-20 md:py-28 px-6">
       <div className="max-w-3xl mx-auto">
-        <SectionHeader index={sectionNumber('education')} label="Education" title="Education" isInView={isInView} />
+        <SectionHeader title="Education" isInView={isInView} />
 
         <div className="space-y-6">
           {educationData.map((item, i) => (

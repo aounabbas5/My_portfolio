@@ -31,7 +31,11 @@ export const aboutData = {
     "I'm Aoun Abbas, a Computer Science student at FAST University learning web development by building real projects.",
     "I enjoy turning ideas into clean, functional websites, and I'm always picking up new tools to improve my skills.",
   ],
-  interests: ["Web Development", "Problem Solving", "Continuous Learning"],
+  focus: "Web Development",
+  // Shown in the About section's Experience card. Add details (e.g. course, term) if you like.
+  experience: ["Teaching Assistant", "Lab Demonstrator"],
+  // Extra items for "Currently Learning" (skills marked level: "learning" below are added automatically).
+  learning: ["Web Development", "App Development"],
 };
 
 export const skillsData = {
@@ -52,6 +56,10 @@ export const skillsData = {
         { name: "Git", level: "confident" },
         { name: "GitHub", level: "confident" },
         { name: "VS Code", level: "confident" },
+        { name: "Claude Code", level: "confident" },
+        { name: "Antigravity", level: "confident" },
+        { name: "Vercel", level: "confident" },
+        { name: "MongoDB", level: "confident" },
       ],
     },
   ],
@@ -99,6 +107,7 @@ export const servicesData = {
     { title: "Portfolios", description: "Personal sites for students and freelancers.", icon: "User" },
     { title: "Landing Pages", description: "Focused pages for products and ideas.", icon: "Rocket" },
     { title: "Redesigns", description: "Cleaner layouts for existing sites.", icon: "RefreshCw" },
+    { title: "Full Management Systems", description: "Complete systems to manage records, users and daily workflows.", icon: "LayoutDashboard" },
   ],
 };
 
@@ -115,6 +124,12 @@ export const educationData = [
     period: null, // e.g. "August 2022 - June 2026"
     note: null, // e.g. "Dean's List – Spring 2024"
   },
+  {
+    degree: "Intermediate",
+    school: "Chenab College, Ahmed Pur Sial",
+    period: null, // e.g. "2020 - 2022"
+    note: null,
+  },
 ];
 
 // Add entries like: { title: "Python for Everybody", issuer: "Coursera", date: "March 2025", url: "https://..." }
@@ -123,7 +138,7 @@ export const certificationsData = [];
 export const contactData = {
   headline: "Contact Me",
   description: "Have a project in mind? Send me a message.",
-  email: "your.email@example.com", // UPDATE: Your email address
+  email: "aounabbassadhana@gmail.com",
   linkedin: "https://linkedin.com/in/your-profile", // UPDATE: Your LinkedIn URL
   github: "https://github.com/your-username", // UPDATE: Your GitHub URL
   resume: null, // UPDATE: put your CV in /public and set e.g. "/Aoun-Abbas-CV.pdf"
@@ -151,7 +166,3 @@ export const navLinks = [
 export const footerData = {
   tagline: "Web Developer & CS Student",
 };
-
-// "01", "02"... follows the sections that are actually shown.
-export const sectionNumber = (id) =>
-  String(navLinks.findIndex((l) => l.href === `#${id}`)).padStart(2, '0');

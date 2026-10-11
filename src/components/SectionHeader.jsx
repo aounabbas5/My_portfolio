@@ -1,16 +1,12 @@
 import React from 'react';
 
-export default function SectionHeader({ index, label, title, subtitle, isInView = true }) {
+export default function SectionHeader({ title, subtitle, isInView = true }) {
   return (
     <div
       className={`mb-12 md:mb-16 text-center transition-all duration-700 ease-out ${
         isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
       }`}
     >
-      <p className="hud-label mb-3">
-        {index ? `// ${index} · ` : '// '}
-        {label}
-      </p>
       <h2 className="text-3xl md:text-5xl font-bold text-gradient">{title}</h2>
       <div className="mx-auto mt-5 flex items-center justify-center gap-2" aria-hidden="true">
         <span className="h-px w-10 bg-gradient-to-r from-transparent to-glow" />
