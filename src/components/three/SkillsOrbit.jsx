@@ -88,10 +88,12 @@ function Orbit({ skills, labels, hovered }) {
               e.stopPropagation();
               hovered.current = i;
               document.body.style.cursor = 'pointer';
+              document.documentElement.dataset.cursor = 'pointer';
             }}
             onPointerOut={() => {
               if (hovered.current === i) hovered.current = -1;
               document.body.style.cursor = '';
+              delete document.documentElement.dataset.cursor;
             }}
           >
             <icosahedronGeometry args={[0.21, 1]} />

@@ -28,6 +28,7 @@
   --border-soft: rgba(165, 181, 169, 0.2);
   --border-gold: rgba(231, 211, 161, 0.4);
 
+
   /* Claymorphism — every tone derives from the palette */
   --clay-surface: linear-gradient(
     145deg,
@@ -466,6 +467,41 @@ h3 {
 .clay-press:active {
   transform: translateY(1px) scale(0.95);
   box-shadow: var(--clay-pressed);
+}
+
+/* ============================================
+   CURSOR
+   The robotic-hand overlay (HandCursor) is the only custom cursor. It never
+   replaces the native cursor until its first frame has rendered, so on touch
+   devices, reduced motion, low-end/no-WebGL devices or on any failure the
+   normal browser cursor is used.
+   ============================================ */
+
+@media (pointer: fine) {
+  a,
+  button,
+  [role='button'],
+  summary,
+  select,
+  label[for],
+  .cursor-pointer {
+    cursor: pointer;
+  }
+
+  :disabled {
+    cursor: not-allowed;
+  }
+}
+
+html.has-3d-cursor,
+html.has-3d-cursor * {
+  cursor: none !important;
+}
+
+/* form fields keep the text cursor so typing and selecting stay natural */
+html.has-3d-cursor input,
+html.has-3d-cursor textarea {
+  cursor: text !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

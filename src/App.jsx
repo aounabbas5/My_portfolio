@@ -11,6 +11,7 @@ import Education from './components/Education';
 import Certifications from './components/Certifications';
 import Contact from './components/Contact';
 import Footer from './components/Footer';
+import HandCursor from './components/HandCursor';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         Skip to content
       </a>
       <Background />
+      <HandCursor />
       <Navbar />
       <main>
         <Hero />
