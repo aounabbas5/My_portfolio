@@ -1,86 +1,91 @@
 import React from 'react';
-import { GraduationCap, Code2, TrendingUp } from 'lucide-react';
-import { aboutData } from '../data/config';
+import { Download } from 'lucide-react';
+import { aboutData, skillsData, contactData, educationData, sectionNumber } from '../data/config';
 import { useInView } from '../hooks/useInView';
+import { addRipple } from '../hooks/ripple';
+import SectionHeader from './SectionHeader';
+import Tilt from './Tilt';
 
-const iconMap = {
-  GraduationCap,
-  Code2,
-  TrendingUp,
-};
+const learning = skillsData.categories.flatMap((c) => c.skills).filter((s) => s.level === 'learning');
 
-const About = () => {
-  const [ref, isInView] = useInView({ threshold: 0.15 });
+export default function About() {
+  const [ref, isInView] = useInView({ threshold: 0.12 });
+  const edu = educationData[0];
 
   return (
-    <section
-      id="about"
-      ref={ref}
-      className="relative py-24 px-6 bg-[#0a0a0f] text-[#f0f0f5] overflow-hidden"
-    >
-      <div className="max-w-6xl mx-auto w-full relative z-10">
-        {/* Section Heading */}
+    <section id="about" ref={ref} className="py-20 md:py-28 px-6">
+      <div className="max-w-6xl mx-auto">
+        <SectionHeader index={sectionNumber('about')} label="About" title="About Me" isInView={isInView} />
+
         <div
-          className={`mb-12 transition-all duration-700 ease-out ${
-            isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+          className={`grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-8 transition-all duration-700 delay-100 ${
+            isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
           }`}
         >
-          <div className="flex items-center gap-3 mb-3">
-            <span className="h-0.5 w-8 bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] rounded-full" />
-            <span className="text-sm font-semibold tracking-widest text-[#6366f1] uppercase">
-              Get To Know Me
-            </span>
-          </div>
-          <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-[#f0f0f5]">
-            About Me
-          </h2>
-        </div>
+          <Tilt max={4} className="panel rounded-2xl p-7 md:p-10 lg:col-span-3 flex flex-col">
+            <h3 className="font-display text-2xl font-semibold text-champagne mb-5">{aboutData.heading}</h3>
+            <div className="space-y-4 text-muted text-base md:text-lg leading-relaxed">
+              {aboutData.paragraphs.map((p) => (
+                <p key={p}>{p}</p>
+              ))}
+            </div>
 
-        {/* Description */}
-        <p
-          className={`text-lg text-[#8a8a9a] leading-relaxed max-w-3xl mb-16 transition-all duration-700 delay-100 ease-out ${
-            isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-          }`}
-        >
-          {aboutData.description}
-        </p>
-
-        {/* Highlight Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
-          {aboutData.highlights.map((card, index) => {
-            const IconComponent = iconMap[card.icon] || Code2;
-            const delays = ['delay-200', 'delay-300', 'delay-[400ms]'];
-
-            return (
-              <div
-                key={card.title}
-                className={`group relative rounded-2xl p-6 sm:p-8 border border-white/10 bg-white/[0.03] backdrop-blur-md transition-all duration-500 ease-out hover:-translate-y-2 hover:border-[#6366f1]/50 hover:bg-white/[0.05] hover:shadow-[0_10px_30px_-10px_rgba(99,102,241,0.25)] ${
-                  isInView
-                    ? `opacity-100 translate-y-0 ${delays[index]}`
-                    : 'opacity-0 translate-y-4'
-                }`}
-              >
-                {/* Top Glow Line on Hover */}
-                <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-[#6366f1]/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
-                {/* Icon */}
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-[#6366f1]/15 to-[#8b5cf6]/15 border border-[#6366f1]/25 text-[#6366f1] group-hover:text-[#8b5cf6] group-hover:scale-110 transition-all duration-300 mb-6">
-                  <IconComponent className="w-6 h-6" />
+            <div className="mt-auto pt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {edu && (
+                <div className="clay-sm p-4">
+                  <div className="hud-label !text-[10px]">Studying</div>
+                  <div className="mt-1 text-sm font-semibold text-champagne">{edu.degree}</div>
+                  <div className="text-sm text-muted">{edu.school}</div>
                 </div>
-
-                <h3 className="text-xl font-semibold text-[#f0f0f5] mb-3 group-hover:text-white transition-colors duration-200">
-                  {card.title}
-                </h3>
-                <p className="text-sm md:text-base text-[#8a8a9a] leading-relaxed">
-                  {card.description}
-                </p>
+              )}
+              <div className="clay-sm p-4">
+                <div className="hud-label !text-[10px]">Focus</div>
+                <div className="mt-1 text-sm font-semibold text-champagne">{aboutData.interests[0]}</div>
+                <div className="text-sm text-muted">Open to freelance work</div>
               </div>
-            );
-          })}
+            </div>
+
+            {contactData.resume && (
+              <a href={contactData.resume} download onPointerDown={addRipple} className="btn-primary mt-6 self-start">
+                <Download className="w-4 h-4" />
+                <span>Download Resume</span>
+              </a>
+            )}
+          </Tilt>
+
+          <div className="lg:col-span-2 flex flex-col gap-6">
+            <Tilt max={6} className="panel rounded-2xl p-7 flex-1">
+              <h3 className="font-display text-xl font-semibold text-champagne mb-4">Interests</h3>
+              <ul className="flex flex-wrap gap-2">
+                {aboutData.interests.map((item) => (
+                  <li
+                    key={item}
+                    className="clay-chip text-sm px-3.5 py-1.5"
+                  >
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </Tilt>
+
+            {learning.length > 0 && (
+              <Tilt max={6} className="panel rounded-2xl p-7 flex-1">
+                <h3 className="font-display text-xl font-semibold text-champagne mb-4">Currently Learning</h3>
+                <ul className="flex flex-wrap gap-2">
+                  {learning.map((s) => (
+                    <li
+                      key={s.name}
+                      className="clay-chip clay-chip-gold text-sm px-3.5 py-1.5"
+                    >
+                      {s.name}
+                    </li>
+                  ))}
+                </ul>
+              </Tilt>
+            )}
+          </div>
         </div>
       </div>
     </section>
   );
-};
-
-export default About;
+}

@@ -1,164 +1,83 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowRight, Sparkles } from 'lucide-react';
-import { heroData } from '../data/config';
+import React from 'react';
+import { ArrowRight, ChevronDown } from 'lucide-react';
+import { heroData, siteConfig } from '../data/config';
 import { useInView } from '../hooks/useInView';
+import { useTypewriter } from '../hooks/useTypewriter';
+import { getCapabilities } from '../hooks/useCapabilities';
+import { addRipple } from '../hooks/ripple';
+import RobotFallback from './RobotFallback';
 
-const Hero = () => {
+const reveal = (isInView, delay = '') =>
+  `transition-all duration-700 ease-out ${delay} ${
+    isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'
+  }`;
+
+export default function Hero() {
   const [ref, isInView] = useInView({ threshold: 0.1 });
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(() => {
-    if (typeof window !== 'undefined' && window.matchMedia) {
-      return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    }
-    return false;
-  });
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || !window.matchMedia) return;
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const handleChange = (e) => setPrefersReducedMotion(e.matches);
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
-
-  const handleMouseMove = (e) => {
-    if (prefersReducedMotion) return;
-    const { clientX, clientY, currentTarget } = e;
-    const rect = currentTarget.getBoundingClientRect();
-    const x = ((clientX - rect.left) / rect.width - 0.5) * 20;
-    const y = ((clientY - rect.top) / rect.height - 0.5) * -20;
-    setMousePos({ x, y });
-  };
-
-  const handleMouseLeave = () => setMousePos({ x: 0, y: 0 });
+  const typed = useTypewriter(heroData.roles);
+  const { enable3D } = getCapabilities();
 
   return (
     <section
-      id="hero"
+      id="home"
       ref={ref}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      className="relative min-h-screen flex items-center justify-center py-24 px-6 overflow-hidden bg-[#0a0a0f] text-[#f0f0f5]"
+      aria-label="Introduction"
+      className="relative min-h-screen flex items-center px-6 pt-28 pb-24"
     >
-      {/* Background Ambient Glow */}
-      <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#6366f1]/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 translate-x-1/4 translate-y-1/4 w-[30rem] h-[30rem] bg-[#8b5cf6]/8 rounded-full blur-[120px] pointer-events-none" />
-
-      <div className="max-w-6xl mx-auto w-full relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-        {/* Left Content */}
-        <div className="lg:col-span-7 flex flex-col items-start space-y-6">
-          {/* Availability Badge */}
-          <div
-            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 backdrop-blur-md transition-all duration-700 ease-out ${
-              isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-            }`}
-          >
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-            </span>
-            <span className="text-xs font-medium text-emerald-300 tracking-wide">
-              {heroData.availability}
-            </span>
+      <div className="max-w-6xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+        <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
+          {/* Mobile: room for the 3D core (or CSS emblem when 3D is off) */}
+          <div className="lg:hidden mb-4 flex justify-center" aria-hidden="true">
+            {enable3D ? (
+              <div className="h-56" />
+            ) : (
+              <RobotFallback className="h-56 w-auto" />
+            )}
           </div>
 
-          {/* Label Badge */}
-          <div
-            className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-indigo-500/20 bg-indigo-500/10 backdrop-blur-sm transition-all duration-700 delay-100 ease-out ${
-              isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5 text-[#6366f1]" />
-            <span className="text-xs font-semibold tracking-wider uppercase text-indigo-300">
-              {heroData.label}
-            </span>
-          </div>
-
-          {/* Headings */}
-          <div
-            className={`space-y-3 transition-all duration-700 delay-200 ease-out ${
-              isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-            }`}
-          >
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-[#f0f0f5]">
-              {heroData.greeting}
-            </h1>
-            <h2 className="text-2xl md:text-4xl font-semibold tracking-tight gradient-text">
-              {heroData.headline}
-            </h2>
-          </div>
-
-          {/* Description */}
-          <p
-            className={`text-lg text-[#8a8a9a] leading-relaxed max-w-xl transition-all duration-700 delay-300 ease-out ${
-              isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-            }`}
-          >
-            {heroData.description}
+          <p className={`hud-label mb-4 ${reveal(isInView)}`}>
+            {heroData.greeting}
           </p>
 
-          {/* CTA Buttons */}
+          <h1 className={`text-5xl sm:text-6xl xl:text-7xl font-bold leading-[1.05] text-gradient ${reveal(isInView, 'delay-100')}`}>
+            {siteConfig.name}
+          </h1>
+
+          <p className={`mt-6 text-xl sm:text-2xl text-champagne min-h-[2rem] ${reveal(isInView, 'delay-200')}`}>
+            {heroData.prefix}{' '}
+            <span className="font-semibold text-gold">{typed}</span>
+            <span className="typing-cursor" aria-hidden="true" />
+          </p>
+
           <div
-            className={`flex flex-wrap items-center gap-4 pt-2 transition-all duration-700 delay-[400ms] ease-out ${
-              isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-            }`}
+            className={`flex flex-col sm:flex-row items-stretch gap-4 mt-10 w-full max-w-xs sm:max-w-none sm:w-auto ${reveal(isInView, 'delay-300')}`}
           >
-            <a href={heroData.cta.primary.href} className="btn-primary">
+            <a href={heroData.cta.primary.href} onPointerDown={addRipple} className="btn-primary">
               <span>{heroData.cta.primary.text}</span>
-              <ArrowRight className="w-4 h-4 relative z-10" />
+              <ArrowRight className="w-4 h-4" />
             </a>
-            <a href={heroData.cta.secondary.href} className="btn-secondary">
+            <a href={heroData.cta.secondary.href} onPointerDown={addRipple} className="btn-secondary">
               <span>{heroData.cta.secondary.text}</span>
             </a>
           </div>
         </div>
 
-        {/* Right 3D Visual */}
-        <div
-          className={`lg:col-span-5 hidden md:flex items-center justify-center relative min-h-[360px] md:min-h-[440px] transition-all duration-1000 delay-300 ease-out ${
-            isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-          }`}
-        >
-          <div className="hero-3d-container">
-            {/* Glow Orb */}
-            <div className="hero-glow" />
-
-            {/* Mouse parallax wrapper */}
-            <div
-              className="hero-3d-scene"
-              style={{
-                transform: prefersReducedMotion
-                  ? 'none'
-                  : `rotateY(${mousePos.x * 0.5}deg) rotateX(${mousePos.y * 0.5}deg)`,
-                transition: 'transform 0.3s ease-out',
-              }}
-            >
-              {/* Glass Panels */}
-              <div className="hero-3d-panel hero-3d-panel-1">
-                <div className="absolute inset-3 border border-[#6366f1]/10 rounded-xl" />
-                <div className="absolute top-4 left-4 w-8 h-1 bg-gradient-to-r from-[#6366f1]/40 to-transparent rounded-full" />
-                <div className="absolute top-7 left-4 w-12 h-1 bg-gradient-to-r from-[#8b5cf6]/30 to-transparent rounded-full" />
-                <div className="absolute bottom-4 right-4 w-2 h-2 rounded-full bg-[#6366f1]/40" />
-              </div>
-              <div className="hero-3d-panel hero-3d-panel-2">
-                <div className="absolute inset-3 border border-[#8b5cf6]/10 rounded-xl" />
-                <div className="absolute top-4 right-4 w-6 h-6 border border-[#8b5cf6]/20 rounded-lg" />
-              </div>
-              <div className="hero-3d-panel hero-3d-panel-3">
-                <div className="absolute inset-2 border border-[#6366f1]/8 rounded-lg" />
-              </div>
-            </div>
-
-            {/* Floating dots */}
-            <div className="hero-dot" style={{ top: '20%', left: '15%', animationDelay: '0s' }} />
-            <div className="hero-dot" style={{ top: '70%', right: '20%', animationDelay: '1.5s' }} />
-            <div className="hero-dot" style={{ top: '40%', right: '10%', animationDelay: '3s' }} />
-            <div className="hero-dot" style={{ bottom: '15%', left: '25%', animationDelay: '2s' }} />
-          </div>
+        {/* Desktop: the 3D core is drawn by the background canvas on this side. */}
+        <div className="hidden lg:flex justify-center items-center min-h-[22rem]" aria-hidden="true">
+          {!enable3D && (
+            <RobotFallback className="h-80 w-auto" />
+          )}
         </div>
       </div>
+
+      <a
+        href="#about"
+        aria-label="Scroll to About"
+        className="absolute bottom-6 left-1/2 -translate-x-1/2 min-h-11 flex flex-col items-center justify-center gap-1 hud-label !text-[10px] !text-muted/75 hover:!text-gold transition-colors"
+      >
+        Scroll
+        <ChevronDown className="w-4 h-4 animate-bounce" />
+      </a>
     </section>
   );
-};
-
-export default Hero;
+}

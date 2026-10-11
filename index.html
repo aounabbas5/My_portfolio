@@ -4,44 +4,54 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#101714" />
+    <meta name="color-scheme" content="dark" />
 
     <!-- Primary Meta Tags -->
-    <title>Aoun Abbas — Web Developer & CS Student</title>
+    <title>Aoun Abbas — Web Developer &amp; CS Student</title>
     <meta
       name="description"
-      content="Personal portfolio of Aoun Abbas, a Computer Science student at FAST University passionate about building modern, responsive websites for people, businesses, and ideas."
+      content="Portfolio of Aoun Abbas, a Computer Science student at FAST University building modern, responsive websites."
     />
+    <meta name="author" content="Aoun Abbas" />
+    <meta name="robots" content="index, follow" />
 
-    <!-- Open Graph / Facebook -->
+    <!-- Open Graph / Twitter -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="Aoun Abbas — Web Developer & CS Student" />
+    <meta property="og:title" content="Aoun Abbas — Web Developer &amp; CS Student" />
     <meta
       property="og:description"
-      content="Personal portfolio of Aoun Abbas, a Computer Science student at FAST University passionate about building modern, responsive websites."
+      content="Portfolio of Aoun Abbas, a Computer Science student at FAST University building modern, responsive websites."
     />
-    <meta property="og:image" content="/og-image.png" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Aoun Abbas — Web Developer &amp; CS Student" />
 
-    <!-- Twitter -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Aoun Abbas — Web Developer & CS Student" />
-    <meta
-      name="twitter:description"
-      content="Personal portfolio of Aoun Abbas, a Computer Science student at FAST University passionate about building modern, responsive websites."
-    />
-    <meta name="twitter:image" content="/og-image.png" />
+    <!-- Structured data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": "Aoun Abbas",
+        "jobTitle": "Web Developer",
+        "alumniOf": "FAST University",
+        "description": "Computer Science student building modern, responsive websites."
+      }
+    </script>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
-
-    <!-- Theme Color -->
-    <meta name="theme-color" content="#0a0a0f" />
   </head>
   <body>
+    <noscript>
+      <p style="padding:2rem;color:#fff;background:#04070d;font-family:sans-serif">
+        Aoun Abbas — Web Developer &amp; CS Student. Please enable JavaScript to view this portfolio.
+      </p>
+    </noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
