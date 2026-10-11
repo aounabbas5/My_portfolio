@@ -16,7 +16,7 @@ import HandCursor from './components/HandCursor';
 function App() {
   return (
     <>
-      <a href="#about" className="sr-only-skip">
+      <a href="#skills" className="sr-only-skip">
         Skip to content
       </a>
       <Background />
@@ -24,13 +24,13 @@ function App() {
       <Navbar />
       <main>
         <Hero />
-        <About />
         <Skills />
         <Projects />
         <Services />
         <Experience />
         <Education />
         <Certifications />
+        <About />
         <Contact />
       </main>
       <Footer />

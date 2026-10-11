@@ -134,7 +134,6 @@ export const contactData = {
 // Sections that have data. Used by the navbar and footer.
 export const navLinks = [
   { label: "Home", href: "#home" },
-  { label: "About", href: "#about" },
   { label: "Skills", href: "#skills" },
   { label: "Projects", href: "#projects" },
   { label: "Services", href: "#services" },
@@ -145,6 +144,7 @@ export const navLinks = [
   certificationsData.length
     ? { label: "Certifications", href: "#certifications" }
     : null,
+  { label: "About", href: "#about" },
   { label: "Contact", href: "#contact" },
 ].filter(Boolean);
 

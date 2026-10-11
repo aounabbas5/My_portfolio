@@ -55,11 +55,14 @@ export default function Robot({ input }) {
     const t = fx.clock.elapsedTime;
     const { camera, size } = fx;
     const g = root.current;
-    const desktop = size.width >= 900;
+    // Must match the Hero layout: side-by-side on wide screens (>=1024px) and on
+    // short landscape screens (phones held sideways); stacked above the text otherwise.
+    const shortLandscape = size.width > size.height && size.height <= 540;
+    const desktop = size.width >= 1024 || shortLandscape;
 
     // ---- placement in the hero (right on desktop, above the text on mobile)
     const unitsPerPx = (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.position.z) / size.height;
-    const scale = desktop ? 0.85 : 0.44;
+    const scale = shortLandscape ? 0.6 : desktop ? 0.85 : 0.44;
     const baseY = (desktop ? -0.1 : 1.95) + input.current.scrollY * unitsPerPx;
     g.position.x = damp(g.position.x, desktop ? 2.55 : 0, 3, dt);
     g.position.y = baseY + Math.sin(t * 1.15) * 0.1 * scale; // gentle float

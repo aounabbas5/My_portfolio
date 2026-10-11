@@ -26,7 +26,7 @@ function Tile({ icon: Icon, label, value, href }) {
       </div>
       <div className="min-w-0">
         <div className="text-xs uppercase tracking-wider text-muted/75">{label}</div>
-        <div className="text-sm font-medium text-champagne truncate">{value}</div>
+        <div className="text-sm font-medium text-champagne [overflow-wrap:anywhere]">{value}</div>
       </div>
     </Wrapper>
   );

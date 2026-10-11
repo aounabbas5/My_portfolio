@@ -29,6 +29,7 @@ export default function Skills() {
   const stage = useRef(null);
   const onScreen = useOnScreen(stage);
   const { enable3D } = getCapabilities();
+  const touch = typeof window !== 'undefined' && window.matchMedia('(hover: none)').matches;
 
   return (
     <section id="skills" ref={ref} className="py-20 md:py-28 px-6">
@@ -37,7 +38,7 @@ export default function Skills() {
           index={sectionNumber('skills')}
           label="Skills"
           title="Skills & Technologies"
-          subtitle={enable3D ? 'Hover a node to inspect it. Dashed outlines are things I am learning.' : undefined}
+          subtitle={enable3D ? `${touch ? 'Tap' : 'Hover'} a node to inspect it. Dashed outlines are things I am learning.` : undefined}
           isInView={isInView}
         />
 
