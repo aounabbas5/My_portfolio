@@ -48,8 +48,14 @@ export default function Contact() {
   };
 
   return (
-    <section id="contact" ref={ref} className="py-20 md:py-28 px-6">
-      <div className="max-w-6xl mx-auto">
+    <section id="contact" ref={ref} className="relative py-20 md:py-28 px-6">
+      {/* the connection portal: slow counter-rotating rings behind the headline */}
+      <div className="gateway" aria-hidden="true" data-on={isInView}>
+        <span />
+        <span />
+        <span />
+      </div>
+      <div className="relative max-w-6xl mx-auto">
         <SectionHeader
           title={contactData.headline}
           subtitle={contactData.description}

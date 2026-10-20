@@ -1,12 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Menu, X } from 'lucide-react';
-import { navLinks, siteConfig, contactData } from '../data/config';
-
-const monogram = siteConfig.name
-  .split(' ')
-  .map((w) => w[0])
-  .join('')
-  .slice(0, 2);
+import { navLinks, contactData } from '../data/config';
+import { travelTo } from '../lib/journey';
+import ProfileBadge from './ProfileBadge';
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -76,7 +72,7 @@ export default function Navbar() {
   const go = (e, href) => {
     e.preventDefault();
     setOpen(false);
-    document.getElementById(href.slice(1))?.scrollIntoView({ behavior: 'smooth' });
+    travelTo(href);
   };
 
   return (
@@ -96,16 +92,7 @@ export default function Navbar() {
         className="max-w-6xl mx-auto px-6 flex items-center justify-between"
         style={{ paddingLeft: 'max(1.5rem, env(safe-area-inset-left))', paddingRight: 'max(1.5rem, env(safe-area-inset-right))' }}
       >
-        <a
-          href="#home"
-          onClick={(e) => go(e, '#home')}
-          aria-label={`${siteConfig.name} — back to top`}
-          className="flex items-center gap-3 group"
-        >
-          <span className="clay-sm clay-press w-11 h-11 flex items-center justify-center font-display text-sm font-bold text-gold group-hover:border-gold/50">
-            {monogram}
-          </span>
-        </a>
+        <ProfileBadge />
 
         <nav className="hidden md:flex items-center gap-1" aria-label="Primary">
           {navLinks.map((link) => {

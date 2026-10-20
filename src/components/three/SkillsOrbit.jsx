@@ -8,9 +8,11 @@ import { THEME } from '../../theme';
 const { damp, clamp } = THREE.MathUtils;
 
 // Orbit of the skill medallions around the planet (an ellipse seen at a tilt).
-const ORBIT_A = 3.3;
-const ORBIT_B = 2.15;
-const MEDAL_R = 0.48;
+const ORBIT_A = 3.5;
+const ORBIT_B = 2.3;
+const MEDAL_R = 0.44;
+const WAVE = 0.34; // medallions ride a gentle wave above and below the orbit plane
+const waveY = (a, t) => Math.sin(a * 3 + t * 0.6) * WAVE;
 const TRAIL_N = 18; // points per comet trail
 const TRAIL_STEP = 0.03; // radians between trail points
 
@@ -176,6 +178,46 @@ function planetPattern() {
   return patternTex;
 }
 
+// Energy core: swirling plasma with a bright fresnel rim, additive so it glows through the glass.
+function makePlasmaMaterial() {
+  return new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    uniforms: {
+      uTime: { value: 0 },
+      uPulse: { value: 0 },
+      cA: { value: new THREE.Color(THEME.emeraldGlow) },
+      cB: { value: new THREE.Color('#5FD9A6') },
+      cC: { value: new THREE.Color(THEME.champagneGold) },
+    },
+    vertexShader: `
+      varying vec3 vP; varying vec3 vN; varying vec3 vV;
+      void main(){
+        vP = position;
+        vN = normalize(normalMatrix * normal);
+        vec4 mv = modelViewMatrix * vec4(position, 1.);
+        vV = normalize(-mv.xyz);
+        gl_Position = projectionMatrix * mv;
+      }`,
+    fragmentShader: `
+      uniform float uTime; uniform float uPulse;
+      uniform vec3 cA; uniform vec3 cB; uniform vec3 cC;
+      varying vec3 vP; varying vec3 vN; varying vec3 vV;
+      void main(){
+        vec3 p = vP * 2.2;
+        float n = sin(p.x * 3. + uTime * .9) + sin(p.y * 4. - uTime * 1.2) + sin(p.z * 3.5 + uTime * .7)
+                + sin(length(p.xy) * 6. - uTime * 1.6) * .8 + sin((p.x + p.y + p.z) * 2.5 + uTime) * .6;
+        n = n * .14 + .5;
+        float fres = pow(1. - clamp(dot(normalize(vN), normalize(vV)), 0., 1.), 2.2);
+        vec3 col = mix(cA, cB, smoothstep(.25, .8, n)) * (.55 + n * .8);
+        col += cC * fres * 1.5;
+        col *= 1. + uPulse * .35;
+        gl_FragColor = vec4(col, .55 + fres * .45);
+      }`,
+  });
+}
+
 // Deterministic PRNG so the particle field is identical between renders.
 function rng(seed) {
   let a = seed;
@@ -215,6 +257,16 @@ function Orbit({ skills, labels, hovered }) {
   const particles = useRef();
   const keyLight = useRef();
   const coreLight = useRef();
+  const lattice = useRef();
+  const link = useRef();
+  const pulse = useRef();
+  const appear = useRef(0);
+  const plasma = useMemo(() => makePlasmaMaterial(), []);
+  const linkGeo = useMemo(() => {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3));
+    return g;
+  }, []);
   const phase = useRef(0);
   const speed = useRef(1);
   const tmp = useMemo(() => new THREE.Vector3(), []);
@@ -274,12 +326,12 @@ function Orbit({ skills, labels, hovered }) {
     // fit the whole orbit into the panel (narrow phones shrink it)
     const visH = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.position.length();
     const visW = visH * (size.width / size.height);
-    const fit = clamp(visW / 9.2, 0.5, 1.15);
+    const fit = clamp(visW / 8.8, 0.5, 1.15);
     world.current.scale.setScalar(damp(world.current.scale.x, fit, 6, dt));
     world.current.position.y = Math.sin(t * 0.8) * 0.07; // gentle floating
 
     // smooth 3D tilt that follows the cursor, plus a slow breathing sway
-    tilt.current.rotation.x = damp(tilt.current.rotation.x, -0.85 + pointer.y * 0.17 + Math.sin(t * 0.5) * 0.03, 3, dt);
+    tilt.current.rotation.x = damp(tilt.current.rotation.x, -0.72 + pointer.y * 0.17 + Math.sin(t * 0.5) * 0.03, 3, dt);
     tilt.current.rotation.y = damp(tilt.current.rotation.y, pointer.x * 0.24 + Math.sin(t * 0.35) * 0.05, 3, dt);
 
     // planet: a gentle wobble instead of a constant spin
@@ -290,6 +342,19 @@ function Orbit({ skills, labels, hovered }) {
     patternA.current.rotation.y += dt * 0.1;
     patternB.current.rotation.y -= dt * 0.06;
     const breathe = 0.5 + 0.5 * Math.sin(t * 1.1);
+    plasma.uniforms.uTime.value = t;
+    plasma.uniforms.uPulse.value = breathe;
+    lattice.current.rotation.y += dt * 0.12;
+    lattice.current.rotation.x += dt * 0.05;
+
+    // a scanning ring expands from the platform every few seconds
+    const sp = (t % 3.2) / 3.2;
+    pulse.current.scale.setScalar(0.35 + sp * 1.5);
+    pulse.current.material.opacity = (1 - sp) ** 2 * 0.5;
+
+    // on first view the skills fly out of the core into their orbit
+    appear.current = Math.min(1, appear.current + dt / 1.6);
+    const grow = 1 - (1 - appear.current) ** 3;
     coreGlow.current.scale.setScalar(1 + breathe * 0.1);
     coreGlow.current.material.opacity = 0.28 + breathe * 0.2;
     coreWire.current.opacity = 0.05 + breathe * 0.05;
@@ -325,16 +390,18 @@ function Orbit({ skills, labels, hovered }) {
     keyLight.current.position.x = damp(keyLight.current.position.x, pointer.x * 5, 3, dt);
     keyLight.current.position.y = damp(keyLight.current.position.y, 2 + pointer.y * 3, 3, dt);
 
+    // (filament updated after the nodes move, below)
     // skills revolve around the planet; they slow right down while one is hovered
     speed.current = damp(speed.current, hovered.current >= 0 ? 0.12 : 1, 4, dt);
     phase.current += dt * 0.17 * speed.current;
 
+    link.current.material.opacity = damp(link.current.material.opacity, hovered.current >= 0 ? 0.85 : 0, 8, dt);
     const n = skills.length;
     nodes.current.forEach((node, i) => {
       if (!node) return;
       const skill = skills[i];
       const a = phase.current + (i / n) * Math.PI * 2;
-      node.position.set(Math.cos(a) * ORBIT_A, 0, Math.sin(a) * ORBIT_B);
+      node.position.set(Math.cos(a) * ORBIT_A * grow, waveY(a, t) * grow, Math.sin(a) * ORBIT_B * grow);
       node.lookAt(camera.position); // medallions always face the viewer
       const isHover = hovered.current === i;
       node.scale.setScalar(damp(node.scale.x, isHover ? 1.24 : 1, 8, dt));
@@ -351,12 +418,20 @@ function Orbit({ skills, labels, hovered }) {
       const tp = line.geometry.attributes.position;
       for (let k = 0; k < TRAIL_N; k++) {
         const ang = a - k * TRAIL_STEP;
-        tp.array[k * 3] = Math.cos(ang) * ORBIT_A;
-        tp.array[k * 3 + 1] = 0;
-        tp.array[k * 3 + 2] = Math.sin(ang) * ORBIT_B;
+        tp.array[k * 3] = Math.cos(ang) * ORBIT_A * grow;
+        tp.array[k * 3 + 1] = waveY(ang, t) * grow;
+        tp.array[k * 3 + 2] = Math.sin(ang) * ORBIT_B * grow;
       }
       tp.needsUpdate = true;
       line.material.opacity = 0.25 + depth * 0.65;
+
+      if (isHover) {
+        const lp = linkGeo.attributes.position.array;
+        lp[3] = node.position.x;
+        lp[4] = node.position.y;
+        lp[5] = node.position.z;
+        linkGeo.attributes.position.needsUpdate = true;
+      }
 
       // name tag: locked directly under its medallion, so it only moves with it
       node.getWorldPosition(tmp);
@@ -375,7 +450,7 @@ function Orbit({ skills, labels, hovered }) {
         el.style.padding = narrow ? '1px 7px' : '';
         el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`;
         // on narrow panels, only the front half of the orbit shows names (the back ones are dim anyway)
-        el.style.opacity = isHover ? 1 : narrow && depth < 0.62 ? 0 : 0.22 + depth * 0.78;
+        el.style.opacity = isHover ? 1 : depth < 0.58 ? 0 : 0.15 + ((depth - 0.58) / 0.42) * 0.85;
         el.style.zIndex = isHover ? 5 : Math.round(depth * 4);
         el.style.borderColor = isHover || learning ? THEME.champagneGold : THEME.darkSage;
         el.style.boxShadow = isHover ? '0 0 14px rgba(231,211,161,0.45)' : 'none';
@@ -451,6 +526,9 @@ function Orbit({ skills, labels, hovered }) {
               opacity={0.5}
             />
           </mesh>
+          <mesh material={plasma}>
+            <sphereGeometry args={[0.8, 48, 48]} />
+          </mesh>
           <mesh ref={coreGlow}>
             <sphereGeometry args={[0.5, 32, 32]} />
             <meshBasicMaterial color={THEME.emeraldGlow} transparent opacity={0.35} blending={THREE.AdditiveBlending} depthWrite={false} />
@@ -465,6 +543,11 @@ function Orbit({ skills, labels, hovered }) {
             <meshBasicMaterial map={pattern} color={THEME.champagneGold} transparent opacity={0.85} blending={THREE.AdditiveBlending} depthWrite={false} />
           </mesh>
         </group>
+        {/* geodesic lattice shell */}
+        <mesh ref={lattice}>
+          <icosahedronGeometry args={[1.38, 1]} />
+          <meshBasicMaterial color={THEME.champagneGold} wireframe transparent opacity={0.16} blending={THREE.AdditiveBlending} depthWrite={false} />
+        </mesh>
         {/* soft rim light around the glass */}
         <mesh ref={rimShell}>
           <sphereGeometry args={[1.26, 48, 48]} />
@@ -505,6 +588,11 @@ function Orbit({ skills, labels, hovered }) {
         {trails.map((line, i) => (
           <primitive key={i} object={line} />
         ))}
+
+        {/* energy filament from the core to the hovered skill */}
+        <line ref={link} geometry={linkGeo}>
+          <lineBasicMaterial color={THEME.softChampagne} transparent opacity={0} blending={THREE.AdditiveBlending} depthWrite={false} />
+        </line>
 
         {/* skill medallions */}
         {skills.map((skill, i) => (
@@ -587,6 +675,10 @@ function Orbit({ skills, labels, hovered }) {
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2.15, 0]}>
         <torusGeometry args={[1.9, 0.014, 8, 100]} />
         <meshBasicMaterial color={THEME.champagneGold} transparent opacity={0.45} />
+      </mesh>
+      <mesh ref={pulse} rotation={[-Math.PI / 2, 0, 0]} position={[0, -2.14, 0]}>
+        <ringGeometry args={[1.92, 2.0, 96]} />
+        <meshBasicMaterial color={THEME.champagneGold} transparent opacity={0} blending={THREE.AdditiveBlending} depthWrite={false} />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2.15, 0]}>
         <circleGeometry args={[1.8, 64]} />

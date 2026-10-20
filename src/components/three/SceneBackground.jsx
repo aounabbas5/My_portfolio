@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Environment, Lightformer } from '@react-three/drei';
+import { Environment, Lightformer, PerformanceMonitor } from '@react-three/drei';
 import { getCapabilities } from '../../hooks/useCapabilities';
 import { THEME } from '../../theme';
 import Robot from './Robot';
+import Chips from './Chips';
 
 // Deterministic PRNG so the scene is stable between renders.
 function rng(seed) {
@@ -65,8 +66,9 @@ function FloatingShapes({ count, input }) {
   useFrame((_, dt) => {
     group.current.position.y = damp(group.current.position.y, input.current.scrollY * 0.0042, 4, dt);
     group.current.children.forEach((child, i) => {
-      child.rotation.x += dt * items[i].spin;
-      child.rotation.y += dt * items[i].spin * 1.3;
+      const boost = 1 + Math.abs(input.current.vel) * 0.06;
+      child.rotation.x += dt * items[i].spin * boost;
+      child.rotation.y += dt * items[i].spin * 1.3 * boost;
     });
   });
 
@@ -110,13 +112,25 @@ function CameraRig({ input }) {
     state.camera.position.x = damp(state.camera.position.x, input.current.x * 0.35, 2.5, dt);
     state.camera.position.y = damp(state.camera.position.y, input.current.y * 0.25, 2.5, dt);
     state.camera.lookAt(0, 0, 0);
+
+    // Scrolling fast banks the camera and stretches the lens a touch; it settles when you stop.
+    input.current.vel = damp(input.current.vel, 0, 4, dt);
+    const v = input.current.vel;
+    state.camera.rotation.z = damp(state.camera.rotation.z, -v * 0.0016, 5, dt);
+    const fov = 45 + Math.min(Math.abs(v), 90) * 0.12;
+    if (Math.abs(state.camera.fov - fov) > 0.02) {
+      state.camera.fov = fov;
+      state.camera.updateProjectionMatrix();
+    }
   });
   return null;
 }
 
-export default function SceneBackground() {
+export default function SceneBackground({ paused = false }) {
   const { mobile } = getCapabilities();
-  const input = useRef({ x: 0, y: 0, scrollY: 0, moved: false, lastMove: 0, coarse: getCapabilities().mobile });
+  // Starts at full quality and steps down by itself if the frame rate can't keep up.
+  const [lean, setLean] = useState(false);
+  const input = useRef({ x: 0, y: 0, scrollY: 0, vel: 0, moved: false, lastMove: 0, coarse: getCapabilities().mobile });
 
   useEffect(() => {
     const onMove = (e) => {
@@ -127,6 +141,9 @@ export default function SceneBackground() {
       input.current.coarse = e.pointerType === 'touch' || e.pointerType === 'pen';
     };
     const onScroll = () => {
+      // smoothed scroll speed (px/event) — drives the camera roll and the shapes' spin
+      const dy = window.scrollY - input.current.scrollY;
+      input.current.vel = THREE.MathUtils.clamp(input.current.vel * 0.6 + dy * 0.4, -120, 120);
       input.current.scrollY = window.scrollY;
     };
     onScroll();
@@ -144,10 +161,12 @@ export default function SceneBackground() {
     <Canvas
       aria-hidden="true"
       style={{ position: 'fixed', inset: 0, zIndex: -1, pointerEvents: 'none' }}
-      dpr={[1, mobile ? 1.25 : 1.75]}
+      frameloop={paused ? 'never' : 'always'}
+      dpr={lean ? 1 : [1, mobile ? 1.25 : 1.75]}
       camera={{ position: [0, 0, 8], fov: 45 }}
       gl={{ antialias: !mobile, alpha: true, powerPreference: 'high-performance' }}
     >
+      <PerformanceMonitor onDecline={() => setLean(true)} flipflops={2} />
       <ambientLight intensity={0.6} />
       <directionalLight color={THEME.softChampagne} intensity={1.8} position={[4, 5, 6]} />
       <pointLight color={THEME.emeraldGlow} intensity={28} distance={22} position={[-6, -2, 4]} />
@@ -160,6 +179,7 @@ export default function SceneBackground() {
       <CameraRig input={input} />
       <Particles count={mobile ? 260 : 650} input={input} />
       <FloatingShapes count={mobile ? 6 : 11} input={input} />
+      {!lean && <Chips count={mobile ? 2 : 4} input={input} />}
       <Robot input={input} />
     </Canvas>
   );

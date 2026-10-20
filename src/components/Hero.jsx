@@ -5,7 +5,9 @@ import { useInView } from '../hooks/useInView';
 import { useTypewriter } from '../hooks/useTypewriter';
 import { getCapabilities } from '../hooks/useCapabilities';
 import { addRipple } from '../hooks/ripple';
+import { useIntroDone } from '../lib/journey';
 import RobotFallback from './RobotFallback';
+import TerminalCard from './TerminalCard';
 
 const reveal = (isInView, delay = '') =>
   `transition-all duration-700 ease-out ${delay} ${
@@ -13,7 +15,10 @@ const reveal = (isInView, delay = '') =>
   }`;
 
 export default function Hero() {
-  const [ref, isInView] = useInView({ threshold: 0.1 });
+  const [ref, seen] = useInView({ threshold: 0.1 });
+  // Hold the reveal until the portal has opened, so the hero assembles as it dissolves.
+  const introDone = useIntroDone();
+  const isInView = seen && introDone;
   const typed = useTypewriter(heroData.roles);
   const { enable3D } = getCapabilities();
 
@@ -68,6 +73,8 @@ export default function Hero() {
             <RobotFallback className="h-80 w-auto" />
           )}
         </div>
+        {/* a little terminal under the robot, only where there is room for it */}
+        <TerminalCard className="hero-terminal hidden lg:block" />
       </div>
 
       <a

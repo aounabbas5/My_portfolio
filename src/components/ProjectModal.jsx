@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { X, ExternalLink } from 'lucide-react';
 import { addRipple } from '../hooks/ripple';
+import { lastPointer } from '../lib/journey';
 import { GithubIcon } from './icons';
 
 export default function ProjectModal({ project, onClose }) {
@@ -42,7 +43,8 @@ export default function ProjectModal({ project, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-6 bg-ink/80 backdrop-blur-md"
+      className="portal-open fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-6 bg-ink/80 backdrop-blur-md"
+      style={{ '--ox': `${lastPointer.x}%`, '--oy': `${lastPointer.y}%` }}
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
     >
       <div

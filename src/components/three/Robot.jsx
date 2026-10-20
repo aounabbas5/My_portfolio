@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { RoundedBox } from '@react-three/drei';
 import { THEME } from '../../theme';
+import TechGlyphs from './TechGlyphs';
 
 const { damp, clamp } = THREE.MathUtils;
 
@@ -83,14 +84,16 @@ export default function Robot({ input }) {
     s.eye.x = damp(s.eye.x, tx, 8, dt); // eyes: quicker
     s.eye.y = damp(s.eye.y, ty, 8, dt);
 
-    // ---- head: limited, smooth rotation + idle sway
-    head.current.rotation.y = damp(head.current.rotation.y, s.gaze.x * 0.36 + Math.sin(t * 0.6) * 0.04, 6, dt);
-    head.current.rotation.x = damp(head.current.rotation.x, -s.gaze.y * 0.2 + Math.sin(t * 0.9) * 0.02, 6, dt);
-    head.current.rotation.z = Math.sin(t * 0.7) * 0.03 - s.gaze.x * 0.03;
+    // ---- head: the whole face swings toward the cursor (about 50° sideways, 30° up/down),
+    // the torso follows a little so the turn reads as one body movement
+    head.current.rotation.y = damp(head.current.rotation.y, s.gaze.x * 0.88 + Math.sin(t * 0.6) * 0.04, 5, dt);
+    head.current.rotation.x = damp(head.current.rotation.x, -s.gaze.y * 0.5 + Math.sin(t * 0.9) * 0.02, 5, dt);
+    head.current.rotation.z = Math.sin(t * 0.7) * 0.03 - s.gaze.x * 0.05;
+    g.rotation.y = damp(g.rotation.y, s.gaze.x * 0.22, 3, dt);
 
     // ---- pupils slide inside the eyes
-    const px = s.eye.x * 0.075;
-    const py = s.eye.y * 0.065;
+    const px = s.eye.x * 0.05;
+    const py = s.eye.y * 0.045;
     pupilL.current.position.set(px, py, 0.085);
     pupilR.current.position.set(px, py, 0.085);
 
@@ -132,6 +135,8 @@ export default function Robot({ input }) {
         <torusGeometry args={[1.45, 0.012, 8, 80]} />
         <meshBasicMaterial color={THEME.champagneGold} transparent opacity={0.4} />
       </mesh>
+
+      <TechGlyphs />
 
       {/* body */}
       <RoundedBox args={[1.6, 1.35, 1.2]} radius={0.52} smoothness={6} position={[0, -0.95, 0]}>

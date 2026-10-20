@@ -12,6 +12,8 @@ import Certifications from './components/Certifications';
 import Contact from './components/Contact';
 import Footer from './components/Footer';
 import HandCursor from './components/HandCursor';
+import PortalIntro from './components/PortalIntro';
+import WarpTransition from './components/WarpTransition';
 
 function App() {
   return (
@@ -21,6 +23,8 @@ function App() {
       </a>
       <Background />
       <HandCursor />
+      <PortalIntro />
+      <WarpTransition />
       <Navbar />
       <main>
         <Hero />

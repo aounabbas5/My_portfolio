@@ -542,3 +542,293 @@ html.has-3d-cursor textarea {
     transform: none !important;
   }
 }
+
+/* ============================================
+   PORTAL INTRO (first visit)
+   ============================================ */
+
+html.intro-active,
+html.intro-active body {
+  overflow: hidden;
+}
+
+.portal-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 9990;
+  background: radial-gradient(ellipse 70% 60% at 50% 50%, #0a1a14 0%, #050907 70%);
+  touch-action: none;
+}
+
+.portal-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 80% 80% at 50% 50%, transparent 45%, rgba(0, 0, 0, 0.7) 100%);
+}
+
+.portal-hud {
+  position: absolute;
+  inset: auto 0 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0 1.5rem max(2rem, env(safe-area-inset-bottom));
+  pointer-events: none;
+}
+
+.portal-phase {
+  min-height: 1.2em;
+  animation: phaseIn 0.6s ease-out both;
+  color: var(--color-gold);
+  opacity: 0.85;
+}
+
+@keyframes phaseIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+    letter-spacing: 0.32em;
+  }
+}
+
+.portal-bar {
+  width: min(18rem, 60vw);
+  height: 1px;
+  background: rgba(165, 181, 169, 0.18);
+}
+
+.portal-bar > div {
+  height: 100%;
+  transform: scaleX(0);
+  transform-origin: left;
+  background: linear-gradient(90deg, var(--color-glow), var(--color-gold));
+  box-shadow: 0 0 10px var(--color-glow);
+}
+
+.portal-skip {
+  pointer-events: auto;
+  min-height: 2.75rem;
+  padding: 0.5rem 1.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.portal-skip:hover,
+.portal-skip:focus-visible {
+  color: var(--color-champagne);
+  border-color: var(--border-gold);
+}
+
+/* ============================================
+   WARP TRANSITION (section-to-section travel)
+   ============================================ */
+
+.warp {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  pointer-events: none;
+}
+
+.warp-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.warp-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  text-align: center;
+  padding: 0 1.5rem;
+  will-change: opacity, transform;
+}
+
+.warp-name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(1.6rem, 5vw, 3rem);
+  letter-spacing: -0.01em;
+  color: var(--color-champagne);
+  text-shadow: 0 0 40px var(--emerald-glow), 0 0 12px rgba(231, 211, 161, 0.35);
+}
+
+/* ============================================
+   PROJECT DIALOG — opens like a portal from where you clicked
+   ============================================ */
+
+.portal-open {
+  animation: portalOpen 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes portalOpen {
+  from {
+    clip-path: circle(0% at var(--ox, 50%) var(--oy, 50%));
+  }
+  to {
+    clip-path: circle(150% at var(--ox, 50%) var(--oy, 50%));
+  }
+}
+
+/* ============================================
+   CONTACT GATEWAY
+   ============================================ */
+
+.gateway {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: min(46rem, 130vw);
+  aspect-ratio: 1;
+  transform: translate(-50%, -8%) scale(0.7);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 1.4s ease-out, transform 1.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 25%, transparent 68%);
+  mask-image: radial-gradient(circle at 50% 50%, #000 25%, transparent 68%);
+}
+
+.gateway[data-on='true'] {
+  opacity: 1;
+  transform: translate(-50%, -8%) scale(1);
+}
+
+.gateway span {
+  position: absolute;
+  border-radius: 9999px;
+}
+
+.gateway span:nth-child(1) {
+  inset: 12%;
+  border: 1px dashed rgba(231, 211, 161, 0.35);
+  animation: spin 60s linear infinite;
+}
+
+.gateway span:nth-child(2) {
+  inset: 24%;
+  border: 1px solid rgba(26, 135, 92, 0.45);
+  border-top-color: rgba(231, 211, 161, 0.8);
+  border-left-color: transparent;
+  animation: spin 24s linear infinite reverse;
+}
+
+.gateway span:nth-child(3) {
+  inset: 36%;
+  background: radial-gradient(circle, rgba(231, 211, 161, 0.14), rgba(26, 135, 92, 0.1) 55%, transparent 72%);
+  border: 1px solid rgba(231, 211, 161, 0.25);
+  animation: gatewayPulse 5s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes gatewayPulse {
+  50% {
+    transform: scale(1.08);
+    opacity: 0.7;
+  }
+}
+
+/* sections receive programmatic focus after a warp; no ring on the whole block */
+section[tabindex='-1']:focus {
+  outline: none;
+}
+
+/* ============================================
+   3D SCROLL REVEALS
+   Every section's reveal (the `opacity-0 translate-y-*` state the components already
+   toggle) now also tips in from depth: cards swing in from alternating sides, headings
+   rise and unfold. Rides on the existing `transition-all`, so no component changes.
+   The `.tilt` cards keep their own pointer transform; their wrappers do the reveal.
+   ============================================ */
+
+@media (prefers-reduced-motion: no-preference) {
+  main .opacity-0[class*='translate-y-']:not(.tilt) {
+    transform-origin: 50% 100%;
+    transform: perspective(1100px) translate3d(0, 0, -160px) rotateX(26deg) scale(0.94);
+  }
+
+  main .opacity-0[class*='translate-y-']:not(.tilt):nth-child(odd) {
+    transform: perspective(1100px) translate3d(-40px, 0, -180px) rotateX(18deg) rotateY(-16deg) scale(0.94);
+  }
+
+  main .opacity-0[class*='translate-y-']:not(.tilt):nth-child(even) {
+    transform: perspective(1100px) translate3d(40px, 0, -180px) rotateX(18deg) rotateY(16deg) scale(0.94);
+  }
+
+  /* end state is `none`, so settled elements keep no transform (and no stacking context) */
+  main .opacity-100[class*='translate-y-0']:not(.tilt) {
+    transform: none;
+  }
+}
+
+/* profile card opened from the navbar monogram */
+.profile-card {
+  /* .panel sets position: relative; this must float over the header, not push it */
+  position: absolute;
+  animation: profileIn 0.28s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+  transform-origin: 1.4rem 0;
+  background: linear-gradient(160deg, rgba(14, 52, 40, 0.96), rgba(10, 28, 22, 0.98));
+}
+
+@keyframes profileIn {
+  from {
+    opacity: 0;
+    transform: perspective(700px) translateY(-8px) rotateX(-18deg) scale(0.96);
+  }
+}
+
+/* ============================================
+   TECH DECOR
+   ============================================ */
+
+.data-rain {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -2;
+  pointer-events: none;
+  /* only the outer edges show; the content column stays clear */
+  -webkit-mask-image: linear-gradient(90deg, #000 0, transparent 17%, transparent 83%, #000 100%);
+  mask-image: linear-gradient(90deg, #000 0, transparent 17%, transparent 83%, #000 100%);
+}
+
+/* floats under the robot, hidden on short screens where it would crowd the hero */
+.hero-terminal {
+  position: absolute;
+  right: max(1.5rem, calc((100vw - 72rem) / 2 + 1.5rem));
+  bottom: 4.25rem;
+  width: 15.5rem;
+  animation: floatY 6s ease-in-out infinite;
+}
+
+@media (max-height: 780px) {
+  .hero-terminal {
+    display: none;
+  }
+}
+
+@keyframes floatY {
+  50% {
+    transform: translateY(-7px);
+  }
+}
