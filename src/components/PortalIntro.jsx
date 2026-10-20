@@ -1,5 +1,6 @@
 import React, { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { finishIntro, introWillPlay } from '../lib/journey';
+import { introEnded, introStarted } from '../lib/sound';
 import SceneBoundary from './SceneBoundary';
 
 const PortalScene = lazy(() => import('./three/PortalScene'));
@@ -32,15 +33,24 @@ export default function PortalIntro() {
   const root = useRef(null);
   const bar = useRef(null);
   const stage = useRef(null);
+  const words = useRef(null);
+  const cmd = useRef(null);
+  const title = useRef(null);
+  const sub = useRef(null);
 
   useEffect(() => {
     if (hud.current === null) hud.current = {};
     hud.current.root = root.current;
     hud.current.bar = bar.current;
     hud.current.stage = stage.current;
+    hud.current.words = words.current;
+    hud.current.cmd = cmd.current;
+    hud.current.title = title.current;
+    hud.current.sub = sub.current;
   });
 
   const close = useCallback(() => {
+    introEnded(false);
     finishIntro();
     setMounted(false);
   }, []);
@@ -50,10 +60,14 @@ export default function PortalIntro() {
     setDissolving(true);
   }, []);
 
-  const skip = useCallback(() => skipRef.current?.(), []);
+  const skip = useCallback(() => {
+    introEnded(true); // the soundtrack is timed to the full sequence, so fade it out at once
+    skipRef.current?.();
+  }, []);
 
   useEffect(() => {
     if (!mounted) return undefined;
+    introStarted();
     const rush = setTimeout(skip, FASTFORWARD_MS);
     const failsafe = setTimeout(close, FAILSAFE_MS);
     const onKey = (e) => {
@@ -92,6 +106,13 @@ export default function PortalIntro() {
       </SceneBoundary>
 
       <div className="portal-vignette" aria-hidden="true" />
+
+      {/* the welcome wording; PortalScene types these as the timeline advances */}
+      <div ref={words} className="portal-words" aria-hidden="true">
+        <p ref={cmd} className="hud-label portal-cmd" />
+        <h1 ref={title} className="portal-title" />
+        <p ref={sub} className="portal-sub" />
+      </div>
 
       <div ref={stage} className="portal-hud" aria-hidden={dissolving}>
         <p className="hud-label portal-phase" key={phase}>

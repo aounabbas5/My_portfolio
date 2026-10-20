@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { getCapabilities } from '../hooks/useCapabilities';
 import { THEME } from '../theme';
 import { TRAVEL_EVENT, WORLDS } from '../lib/journey';
+import { warpWhoosh } from '../lib/sound';
 
 /**
  * Section-to-section travel. A 2D canvas draws a short, destination-specific effect
@@ -238,6 +239,7 @@ export default function WarpTransition() {
       const world = WORLDS[id] ?? WORLDS.home;
       const fx = FX[world.fx];
       busy.current = true;
+      warpWhoosh();
       resize();
       canvas.style.display = 'block';
       nameRef.current.textContent = world.name;

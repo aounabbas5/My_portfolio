@@ -14,6 +14,7 @@ import Footer from './components/Footer';
 import HandCursor from './components/HandCursor';
 import PortalIntro from './components/PortalIntro';
 import WarpTransition from './components/WarpTransition';
+import SoundToggle from './components/SoundToggle';
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
       <HandCursor />
       <PortalIntro />
       <WarpTransition />
+      <SoundToggle />
       <Navbar />
       <main>
         <Hero />

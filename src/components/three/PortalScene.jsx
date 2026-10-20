@@ -3,23 +3,41 @@ import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { getCapabilities } from '../../hooks/useCapabilities';
 import { THEME } from '../../theme';
+import { introClock } from '../../lib/sound';
 
 /**
- * Cinematic portal opening. One master timeline `t` (seconds) drives everything:
+ * Cinematic black-hole opening. One master timeline `t` (seconds) drives everything, and every
+ * value is eased from it, so there are no hard cuts:
  *
- *   0.0 - 1.2  dark void, dust drifts in
- *   1.0 - 2.6  energy core ignites, rings of light converge on it
- *   2.2 - 3.8  geometric shards bind to the core, the portal forms and opens
- *   3.6 - 5.5  the camera dives through a digital tunnel
- *   5.0 - 6.0  the tunnel dissolves into the homepage
+ *   0.0 - 1.0  dark void; dust drifts in; a single point of energy ignites
+ *   0.9 - 2.8  the energy collapses: a shockwave, then a black hole opens and the stars bend around it
+ *   1.6 - 3.2  the accretion disk spins up (hot champagne inside, emerald outside)
+ *   0.8 - 3.8  a boot command and "Welcome to Aoun's Portfolio" type themselves above it
+ *   3.5 - 5.4  the dive: we fall toward the horizon, the disk stretches past us, light streaks inward
+ *   5.0 - 6.0  total darkness fades up into the homepage
  */
-const TIMELINE = { core: 1.0, rings: 1.4, portal: 2.3, fly: 3.6, reveal: 5.0, end: 6.0 };
+const TIMELINE = { birth: 0.9, fly: 3.5, reveal: 5.0, end: 6.0 };
+
+// The welcome wording, typed in a terminal voice.
+const CMD = '$ ./welcome --user visitor';
+const GREETING = "Welcome to Aoun's Portfolio";
+const SUB = '// computer science · web · ai';
 
 const { clamp, damp } = THREE.MathUtils;
 const seg = (t, a, b) => clamp((t - a) / (b - a), 0, 1);
 const smooth = (x) => x * x * (3 - 2 * x);
-const easeOut = (x) => 1 - (1 - x) ** 3;
+const smoother = (x) => x * x * x * (x * (x * 6 - 15) + 10);
 const easeIn = (x) => x * x * x;
+
+/** Types `text` into `el` as k goes 0 → 1 (touches the DOM only when the character count changes). */
+function typeInto(el, text, k) {
+  if (!el) return;
+  const n = k <= 0 ? 0 : Math.min(text.length, Math.ceil(k * text.length));
+  if (el.dataset.n !== String(n)) {
+    el.dataset.n = String(n);
+    el.textContent = text.slice(0, n);
+  }
+}
 
 function rng(seed) {
   let a = seed;
@@ -36,7 +54,6 @@ const C = {
   emerald: new THREE.Color(THEME.emeraldGlow),
   bright: new THREE.Color('#3fd9a0'),
   gold: new THREE.Color(THEME.champagneGold),
-  soft: new THREE.Color(THEME.softChampagne),
 };
 
 /* ---------- shaders ---------- */
@@ -50,6 +67,137 @@ const NOISE = /* glsl */ `
                mix(hash(i + vec2(0., 1.)), hash(i + vec2(1., 1.)), f.x), f.y);
   }
 `;
+
+/**
+ * The black hole itself, drawn analytically on a full-screen quad:
+ *  - a procedural starfield whose sampling coordinates are bent toward the hole (gravitational lensing)
+ *  - a thin accretion disk seen at a slant, brighter on the side moving toward us, with the far side of
+ *    the disk lensed into a glowing ring over the top and under the bottom of the horizon
+ *  - a photon ring right at the horizon, and a pure-black event horizon
+ * `uZoom` is the dive: the whole picture scales up until the horizon swallows the screen.
+ */
+function BlackHole({ tl }) {
+  const { size } = useThree();
+  const mat = useMemo(
+    () =>
+      new THREE.ShaderMaterial({
+        depthTest: false,
+        depthWrite: false,
+        uniforms: {
+          uTime: { value: 0 },
+          uAspect: { value: 1 },
+          uBirth: { value: 0 },
+          uDisk: { value: 0 },
+          uZoom: { value: 1 },
+          uWave: { value: 0 },
+          uSrc: { value: 0 },
+          uFlash: { value: 0 },
+          uMouse: { value: new THREE.Vector2() },
+          cEm: { value: C.emerald },
+          cGold: { value: C.gold },
+        },
+        vertexShader: /* glsl */ `
+          varying vec2 vUv;
+          void main(){ vUv = uv; gl_Position = vec4(position.xy, 0., 1.); }`,
+        fragmentShader: /* glsl */ `
+          ${NOISE}
+          uniform float uTime, uAspect, uBirth, uDisk, uZoom, uWave, uSrc, uFlash;
+          uniform vec2 uMouse;
+          uniform vec3 cEm, cGold;
+          varying vec2 vUv;
+
+          float stars(vec2 q){
+            float acc = 0.;
+            for (int i = 0; i < 3; i++){
+              float sc = 20. * pow(2.1, float(i));
+              vec2 g = q * sc + float(i) * 17.3;
+              vec2 id = floor(g), f = fract(g) - .5;
+              float h = hash(id);
+              vec2 o = (vec2(hash(id + 3.1), hash(id + 7.7)) - .5) * .6;
+              float d = length(f - o);
+              float b = step(.93, h) * smoothstep(.1, 0., d) * (.35 + .65 * hash(id + 9.))
+                      * (.65 + .35 * sin(uTime * (1. + h * 3.) + h * 40.));
+              acc += b * (i == 0 ? 1.3 : .75);
+            }
+            return acc;
+          }
+
+          void main(){
+            vec2 p = (vUv * 2. - 1.) * vec2(uAspect, 1.);
+            p *= max(1., 1. / uAspect);          // keep the hole inside narrow portrait screens
+            p -= uMouse * .035;                  // the whole scene leans a touch toward the pointer
+            p /= uZoom;                          // the dive
+            float r = length(p);
+            float rs = .2 * smoothstep(0., 1., uBirth);   // event-horizon radius
+            float lr = r / max(rs, .0001);
+            float inside = rs > .001 ? smoothstep(rs, rs * .985, r) : 0.;
+
+            // --- lensed starfield: sample positions are pulled toward the hole
+            vec2 q = p * (1. + rs * rs * 1.9 / (r * r + .012));
+            vec3 col = stars(q) * mix(vec3(.75, .95, .9), vec3(1., .93, .75), hash(floor(q * 40.))) * (1. - inside);
+
+            // --- accretion disk (inclined), differential rotation, Doppler-brightened on the left
+            float sini = .3;
+            vec2 dp = vec2(p.x, p.y / sini);
+            float dr = length(dp) / max(rs, .0001);
+            float ang = atan(dp.y, dp.x) + uTime * 2.4 / (dr + .6);
+            // noise is sampled around a circle (cos/sin), so there is no seam where atan() wraps
+            vec2 cs = vec2(cos(ang), sin(ang));
+            float flow = vnoise(cs * 2.6 + vec2(dr * 2.2, dr * 1.1)) * .65 + vnoise(cs * 6. + vec2(dr * 5.5 + 5., dr * 3.)) * .35;
+            float band = smoothstep(1.75, 2.0, dr) * (1. - smoothstep(3.0, 5.3, dr));
+            float heat = clamp((5.3 - dr) / 3.5, 0., 1.);
+            float dop = .3 + 1.1 * smoothstep(1., -1., dp.x / max(length(dp), .0001));
+            vec3 diskCol = mix(cEm, mix(cGold, vec3(1., .96, .85), pow(heat, 3.)), pow(heat, 1.1));
+            float diskI = band * pow(1.9 / max(dr, 1.), 1.5) * (.3 + 1.5 * flow) * dop * uDisk * 2.4;
+            // the far half of the disk hides behind the hole; the near half crosses in front of it
+            float hidden = inside * step(0., p.y);
+            col += diskCol * diskI * (1. - hidden);
+
+            // --- the far side of the disk, bent over the top and under the bottom of the horizon
+            float arc = exp(-pow((lr - 1.4) / .17, 2.)) * (.35 + .9 * abs(p.y) / max(r, .0001))
+                      * (.6 + .5 * smoothstep(1., -1., p.x / max(r, .0001))) * uDisk * 1.5;
+            col += mix(cGold, vec3(1., .95, .85), .5) * arc * (1. - inside);
+
+            // --- photon ring and soft halo
+            col += vec3(1., .96, .85) * exp(-pow((lr - 1.03) / .04, 2.)) * 1.7 * smoothstep(0., 1., uBirth);
+            col += cEm * exp(-max(lr - 1., 0.) * .9) * .12 * uDisk * (1. - inside);
+
+            // --- the birth: a point of energy, a flash and an outgoing shockwave
+            col += vec3(1., .95, .8) * exp(-r * r * 500.) * uSrc * 1.8;
+            col += cEm * exp(-r * r * 40.) * uSrc * .5;
+            float rw = uWave * 1.7;
+            col += mix(cGold, vec3(1.), .4) * exp(-pow((r - rw) / (.03 + .06 * uWave), 2.)) * (1. - uWave) * 1.6;
+            col += vec3(1., .95, .82) * exp(-r * r * 7.) * uFlash;
+
+            // gentle filmic roll-off so the brightest parts bloom instead of clipping
+            col = 1. - exp(-col * 1.25);
+            vec3 bg = mix(vec3(.006, .012, .01), vec3(.02, .05, .04), exp(-r * 1.2)) * (1. - inside);
+            gl_FragColor = vec4(col + bg, 1.);
+          }`,
+      }),
+    []
+  );
+
+  useFrame((fx) => {
+    const t = tl.current.t;
+    const u = mat.uniforms;
+    u.uTime.value = t;
+    u.uAspect.value = size.width / size.height;
+    u.uMouse.value.lerp(fx.pointer, 0.06);
+    u.uBirth.value = smoother(seg(t, TIMELINE.birth, TIMELINE.birth + 1.9));
+    u.uDisk.value = smooth(seg(t, TIMELINE.birth + 0.7, TIMELINE.birth + 2.3));
+    u.uWave.value = seg(t, TIMELINE.birth - 0.1, TIMELINE.birth + 1.5);
+    u.uFlash.value = Math.exp(-(((t - (TIMELINE.birth + 0.1)) / 0.22) ** 2)) * 0.75;
+    u.uSrc.value = smooth(seg(t, 0.15, 0.9)) * (1 - smooth(seg(t, TIMELINE.birth, TIMELINE.birth + 0.7)));
+    u.uZoom.value = Math.exp(smoother(seg(t, TIMELINE.fly, TIMELINE.fly + 1.9)) * 3.1);
+  });
+
+  return (
+    <mesh renderOrder={-1} frustumCulled={false} material={mat}>
+      <planeGeometry args={[2, 2]} />
+    </mesh>
+  );
+}
 
 const dustMaterial = (mobile) =>
   new THREE.ShaderMaterial({
@@ -109,13 +257,13 @@ function Dust({ tl, count, mobile }) {
   useFrame(() => {
     const t = tl.current.t;
     mat.uniforms.uTime.value = t;
-    mat.uniforms.uAlpha.value = smooth(seg(t, 0.1, 1.4)) * (1 - 0.4 * seg(t, TIMELINE.fly, TIMELINE.reveal));
+    mat.uniforms.uAlpha.value = smooth(seg(t, 0.1, 1.4)) * (1 - 0.5 * seg(t, TIMELINE.fly, TIMELINE.reveal));
   });
 
   return <points geometry={geo} material={mat} frustumCulled={false} />;
 }
 
-/** Light streaks that only exist while the camera dives through the portal. */
+/** Light streaks that only exist while the camera dives toward the horizon. */
 function Streaks({ tl, count }) {
   const mat = useMemo(
     () =>
@@ -168,354 +316,61 @@ function Streaks({ tl, count }) {
   }, [count]);
 
   useFrame(() => {
-    const k = seg(tl.current.t, TIMELINE.fly - 0.2, TIMELINE.reveal);
-    mat.uniforms.uLen.value = easeIn(k) * 9;
-    mat.uniforms.uAlpha.value = smooth(seg(tl.current.t, TIMELINE.fly - 0.2, TIMELINE.fly + 0.6)) * (1 - seg(tl.current.t, TIMELINE.reveal, TIMELINE.end));
+    const t = tl.current.t;
+    mat.uniforms.uLen.value = easeIn(seg(t, TIMELINE.fly - 0.2, TIMELINE.reveal)) * 9;
+    mat.uniforms.uAlpha.value =
+      smooth(seg(t, TIMELINE.fly - 0.2, TIMELINE.fly + 0.8)) * 0.8 * (1 - seg(t, TIMELINE.reveal, TIMELINE.end));
   });
 
   return <lineSegments geometry={geo} material={mat} frustumCulled={false} />;
 }
 
-/** Soft glow behind the energy source plus angular light shafts (fake volumetrics). */
-function Glow({ tl }) {
-  const mat = useMemo(
-    () =>
-      new THREE.ShaderMaterial({
-        transparent: true,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-        uniforms: { uTime: { value: 0 }, uCore: { value: 0 }, uShafts: { value: 0 }, cA: { value: C.bright }, cB: { value: C.gold } },
-        vertexShader: /* glsl */ `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }`,
-        fragmentShader: /* glsl */ `
-          ${NOISE}
-          uniform float uTime; uniform float uCore; uniform float uShafts; uniform vec3 cA; uniform vec3 cB;
-          varying vec2 vUv;
-          void main(){
-            vec2 p = vUv * 2. - 1.;
-            float r = length(p);
-            float a = atan(p.y, p.x);
-            float core = exp(-r * 7.) * 1.4 + exp(-r * 2.2) * .35;
-            float shafts = pow(vnoise(vec2(a * 5. + uTime * .25, uTime * .15)), 2.2) * 1.5
-                         * exp(-r * 2.6) * smoothstep(.04, .35, r);
-            vec3 col = mix(cA, cB, exp(-r * 6.)) * (core * uCore + shafts * uShafts);
-            gl_FragColor = vec4(col, clamp(max(col.r, max(col.g, col.b)), 0., 1.) * smoothstep(1., .55, r));
-          }`,
-      }),
-    []
-  );
-
-  useFrame(() => {
-    const t = tl.current.t;
-    mat.uniforms.uTime.value = t;
-    mat.uniforms.uCore.value = smooth(seg(t, TIMELINE.core, TIMELINE.core + 1.2)) * (1 - 0.35 * seg(t, TIMELINE.portal, TIMELINE.fly));
-    mat.uniforms.uShafts.value = smooth(seg(t, TIMELINE.portal - 0.3, TIMELINE.portal + 1.2)) * (1 - seg(t, TIMELINE.fly + 0.4, TIMELINE.reveal));
-  });
-
-  return (
-    <mesh position={[0, 0, -0.15]} renderOrder={1} material={mat}>
-      <planeGeometry args={[15, 15]} />
-    </mesh>
-  );
-}
-
-/**
- * The portal is a black hole seen face-on: a lightless event horizon ringed by a swirling
- * accretion disk (hot champagne inside, emerald outside, brighter on the side moving toward
- * us) and a razor-thin photon ring. On the dive the horizon swells until it swallows the screen.
- */
-function PortalDisc({ tl, radius }) {
-  const mat = useMemo(
-    () =>
-      new THREE.ShaderMaterial({
-        transparent: true,
-        depthWrite: false,
-        uniforms: {
-          uTime: { value: 0 },
-          uOpen: { value: 0 },
-          uDark: { value: 0 },
-          deep: { value: new THREE.Color(THEME.deepForest) },
-          cA: { value: C.emerald },
-          cB: { value: C.bright },
-          cC: { value: C.gold },
-        },
-        vertexShader: /* glsl */ `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }`,
-        fragmentShader: /* glsl */ `
-          ${NOISE}
-          uniform float uTime; uniform float uOpen; uniform float uDark;
-          uniform vec3 deep; uniform vec3 cA; uniform vec3 cB; uniform vec3 cC;
-          varying vec2 vUv;
-          void main(){
-            vec2 p = vUv * 2. - 1.;
-            float r = length(p);
-            float a = atan(p.y, p.x);
-            // the hole opens from the centre outward
-            float iris = smoothstep(uOpen, uOpen - .08, r);
-            if (iris < .001) discard;
-
-            // the event horizon swells during the dive until it swallows everything
-            float rh = .27 + uDark * 1.4;
-            float d = max(r - rh, 0.) / (1. - rh);
-
-            // gas spiralling inward, faster near the hole (differential rotation)
-            float ang = a - 2.4 * log(r + .05) - uTime * 1.5 / (r + .22);
-            float gas = vnoise(vec2(ang * 2.2, r * 9.)) * .6 + vnoise(vec2(ang * 5. + 3., r * 17.)) * .4;
-            float bands = .55 + .45 * sin(ang * 3. + r * 30.);
-            float dens = pow(1. - clamp(d * .95, 0., 1.), 1.5) * smoothstep(0., .03, d);
-            float doppler = .5 + .5 * cos(a - .7);
-
-            vec3 hot = mix(cC, vec3(1., .97, .88), pow(1. - d, 5.));
-            vec3 cool = mix(cA, cB, smoothstep(.1, .5, d));
-            vec3 col = mix(cool, hot, pow(1. - clamp(d * 1.5, 0., 1.), 1.6)) * dens * (.5 + 2.4 * gas * bands) * (.5 + 1.3 * doppler);
-
-            // photon ring hugging the horizon, plus its soft halo
-            float edge = r - rh;
-            col += vec3(1., .96, .85) * exp(-pow(edge / .011, 2.)) * 1.9;
-            col += cC * exp(-max(edge, 0.) / .055) * .38 * step(0., edge);
-
-            // faint lensed arc: light bent over the top and under the bottom of the hole
-            float lens = exp(-pow((abs(p.y) - (rh * 1.5 + .05)) / .018, 2.)) * smoothstep(.55, 0., abs(p.x)) * .55;
-            col += cB * lens * (1. - uDark);
-
-            // inside the horizon: nothing escapes
-            col *= smoothstep(rh - .006, rh + .006, r);
-
-            float alpha = iris * smoothstep(1., .72, r);
-            // the hole itself is fully opaque black
-            alpha = mix(alpha, iris, step(r, rh + .004));
-            gl_FragColor = vec4(col, alpha);
-          }`,
-      }),
-    []
-  );
-
-  useFrame(() => {
-    const t = tl.current.t;
-    mat.uniforms.uTime.value = t;
-    mat.uniforms.uOpen.value = easeOut(seg(t, TIMELINE.portal, TIMELINE.portal + 1.35)) * 1.02;
-    mat.uniforms.uDark.value = smooth(seg(t, TIMELINE.fly + 0.5, TIMELINE.reveal));
-  });
-
-  return (
-    <mesh renderOrder={2} material={mat}>
-      <circleGeometry args={[radius, 96]} />
-    </mesh>
-  );
-}
-
-const ringMat = (color, opacity = 1) =>
-  new THREE.MeshBasicMaterial({ color, transparent: true, opacity, toneMapped: false, blending: THREE.AdditiveBlending, depthWrite: false });
-
-/**
- * Everything that gathers at the centre: core, converging rings, orbiting shards linked
- * to the core by "neural" filaments, and finally the portal rim itself.
- */
-function Source({ tl, mobile }) {
-  const R = 2.3;
-  const core = useRef();
-  const coreWire = useRef();
-  const rings = useRef([]);
-  const rim = useRef();
-  const halo = useRef();
-  const shardRefs = useRef([]);
-  const links = useRef();
-
-  const shardCount = mobile ? 10 : 16;
-  const shards = useMemo(() => {
-    const r = rng(33);
-    return Array.from({ length: shardCount }, (_, i) => ({
-      a: (i / shardCount) * Math.PI * 2 + r() * 0.5,
-      far: 5.5 + r() * 3.5,
-      lift: (r() - 0.5) * 3,
-      speed: 0.35 + r() * 0.5,
-      size: 0.1 + r() * 0.13,
-      kind: i % 3,
-      spin: new THREE.Vector3(r() - 0.5, r() - 0.5, r() - 0.5).multiplyScalar(2),
-    }));
-  }, [shardCount]);
-
-  const shardGeo = useMemo(
-    () => [
-      new THREE.EdgesGeometry(new THREE.OctahedronGeometry(1)),
-      new THREE.EdgesGeometry(new THREE.TetrahedronGeometry(1.15)),
-      new THREE.EdgesGeometry(new THREE.IcosahedronGeometry(0.95, 0)),
-    ],
-    []
-  );
-  const shardMat = useMemo(() => [ringMat(C.gold, 0.95), ringMat(C.bright, 0.95)], []);
-  const linkGeo = useMemo(() => {
-    const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(shardCount * 6), 3));
-    return g;
-  }, [shardCount]);
-  const linkMat = useMemo(() => ringMat(C.bright, 0), []);
-
-  const ringDefs = useMemo(
-    () => [
-      { tilt: [1.1, 0.2, 0], spin: [0.5, 0.9, 0.2], color: C.gold, from: 3.0, r: 1.05 },
-      { tilt: [0.3, 1.2, 0.4], spin: [0.7, -0.6, 0.5], color: C.bright, from: 3.7, r: 1.35 },
-      { tilt: [-0.9, 0.5, 1.2], spin: [-0.4, 0.8, 0.9], color: C.soft, from: 4.5, r: 1.7 },
-    ],
-    []
-  );
-  const ringMats = useMemo(() => ringDefs.map((d) => ringMat(d.color, 0)), [ringDefs]);
-  const rimMat = useMemo(() => ringMat(C.soft, 0), []);
-  const haloMat = useMemo(() => ringMat(C.emerald, 0), []);
-  const coreMat = useMemo(() => ringMat(C.soft, 1), []);
-  const coreWireMat = useMemo(() => ringMat(C.gold, 0), []);
-
-  useFrame((_, dt) => {
-    const t = tl.current.t;
-    const coreIn = easeOut(seg(t, TIMELINE.core, TIMELINE.core + 1.1));
-    const coreOut = 1 - smooth(seg(t, TIMELINE.portal + 0.2, TIMELINE.portal + 1.1));
-
-    // energy core
-    const pulse = 1 + Math.sin(t * 7) * 0.06;
-    core.current.scale.setScalar(0.2 * coreIn * pulse * (1 + 0.8 * seg(t, TIMELINE.portal - 0.4, TIMELINE.portal + 0.2) * (1 - seg(t, TIMELINE.portal + 0.2, TIMELINE.portal + 1.2))));
-    core.current.visible = coreIn > 0.001 && coreOut > 0.001;
-    coreWire.current.visible = core.current.visible;
-    coreWire.current.scale.setScalar(0.62 * coreIn);
-    coreWire.current.rotation.x += dt * 0.9;
-    coreWire.current.rotation.y += dt * 1.3;
-    coreWireMat.opacity = 0.9 * coreIn * coreOut;
-    coreMat.opacity = coreOut;
-
-    // rings converge
-    const conv = seg(t, TIMELINE.rings, TIMELINE.portal + 0.2);
-    rings.current.forEach((m, i) => {
-      const d = ringDefs[i];
-      const k = easeOut(conv);
-      const s = THREE.MathUtils.lerp(d.from, d.r, k) * (1 + 1.4 * easeIn(seg(t, TIMELINE.portal + 0.2, TIMELINE.portal + 1.1)));
-      m.scale.setScalar(s);
-      m.rotation.x = d.tilt[0] + t * d.spin[0] * (1.4 - 0.7 * k);
-      m.rotation.y = d.tilt[1] + t * d.spin[1] * (1.4 - 0.7 * k);
-      m.rotation.z = d.tilt[2] + t * d.spin[2] * 0.5;
-      ringMats[i].opacity = smooth(seg(t, TIMELINE.rings - 0.2, TIMELINE.rings + 0.5)) * (1 - seg(t, TIMELINE.portal + 0.6, TIMELINE.portal + 1.3));
-    });
-
-    // shards fall into orbit around the portal rim, linked back to the core
-    const gather = easeOut(seg(t, TIMELINE.rings + 0.2, TIMELINE.portal + 0.8));
-    const open = easeOut(seg(t, TIMELINE.portal, TIMELINE.portal + 1.35));
-    const fade = 1 - seg(t, TIMELINE.fly - 0.2, TIMELINE.fly + 0.7);
-    const arr = linkGeo.attributes.position.array;
-    shardRefs.current.forEach((m, i) => {
-      const s = shards[i];
-      const orbitR = THREE.MathUtils.lerp(s.far, R * 1.22 + (i % 3) * 0.28, gather);
-      const ang = s.a + t * s.speed * (0.4 + gather);
-      const x = Math.cos(ang) * orbitR;
-      const y = Math.sin(ang) * orbitR * 0.9 + s.lift * (1 - gather);
-      const z = Math.sin(ang * 2 + i) * 0.55 * gather - (1 - gather) * 1.6;
-      m.position.set(x, y, z);
-      m.rotation.x += dt * s.spin.x;
-      m.rotation.y += dt * s.spin.y;
-      m.scale.setScalar(s.size * 2.6 * smooth(seg(t, TIMELINE.core + 0.3 + (i % 5) * 0.12, TIMELINE.core + 0.9 + (i % 5) * 0.12)) * (1 + open * 0.4));
-      m.visible = fade > 0.001;
-      arr.set([0, 0, 0, x, y, z], i * 6);
-    });
-    linkGeo.attributes.position.needsUpdate = true;
-    linkMat.opacity = 0.5 * smooth(seg(t, TIMELINE.rings + 0.4, TIMELINE.rings + 1.2)) * fade * (1 - 0.6 * open);
-    shardMat.forEach((m) => (m.opacity = 0.95 * fade));
-
-    // the portal rim and its halo form last
-    const form = smooth(seg(t, TIMELINE.portal - 0.5, TIMELINE.portal + 0.9));
-    const grow = 0.55 + 0.45 * easeOut(seg(t, TIMELINE.portal - 0.4, TIMELINE.portal + 1.35));
-    rim.current.scale.setScalar(grow);
-    halo.current.scale.setScalar(grow * (1 + 0.04 * Math.sin(t * 3)));
-    rim.current.rotation.z = t * 0.15;
-    haloMat.opacity = form * 0.14;
-    links.current.visible = fade > 0.001;
-  });
-
-  return (
-    <group>
-      <mesh ref={core} material={coreMat} renderOrder={3}>
-        <icosahedronGeometry args={[1, 2]} />
-      </mesh>
-      <lineSegments ref={coreWire} material={coreWireMat} renderOrder={3}>
-        <edgesGeometry args={[new THREE.IcosahedronGeometry(1, 1)]} />
-      </lineSegments>
-
-      {ringDefs.map((d, i) => (
-        <mesh key={i} ref={(el) => (rings.current[i] = el)} material={ringMats[i]} renderOrder={3}>
-          <torusGeometry args={[1, 0.007, 8, 160]} />
-        </mesh>
-      ))}
-
-      {shards.map((s, i) => (
-        <lineSegments
-          key={i}
-          ref={(el) => (shardRefs.current[i] = el)}
-          geometry={shardGeo[s.kind]}
-          material={shardMat[i % 2]}
-          renderOrder={3}
-        />
-      ))}
-      <lineSegments ref={links} geometry={linkGeo} material={linkMat} frustumCulled={false} renderOrder={3} />
-
-      <group>
-        <mesh ref={halo} material={haloMat} renderOrder={3} visible={false}>
-          <torusGeometry args={[R, 0.22, 16, 140]} />
-        </mesh>
-        <mesh ref={rim} material={rimMat} renderOrder={3} visible={false}>
-          <torusGeometry args={[R, 0.045, 12, 200]} />
-        </mesh>
-        <GroupScale tl={tl} radius={R} />
-      </group>
-    </group>
-  );
-}
-
-/** The disc scales with the rim so it never leaks outside it. */
-function GroupScale({ tl, radius }) {
-  const g = useRef();
-  useFrame(() => {
-    const t = tl.current.t;
-    g.current.scale.setScalar(0.55 + 0.45 * easeOut(seg(t, TIMELINE.portal - 0.4, TIMELINE.portal + 1.35)));
-  });
-  return (
-    <group ref={g}>
-      <PortalDisc tl={tl} radius={radius * 0.985} />
-    </group>
-  );
-}
-
-/** Runs the master clock, dollies the camera and reports progress to the DOM. */
+/** Runs the master clock, dollies the camera (for dust and streaks) and reports progress to the DOM. */
 function Rig({ tl, onPhase, onReveal, onDone, hud }) {
-  const { camera, pointer, size } = useThree();
+  const { camera, pointer } = useThree();
   const fired = useRef({ reveal: false, done: false, phase: -1 });
 
   useFrame((_, dt) => {
     const s = tl.current;
-    if (!s.frozen) {
+    // The first frames include shader compilation; don't let that hitch eat the opening.
+    s.frames = (s.frames ?? 0) + 1;
+    if (!s.frozen && s.frames > 3) {
       // wall-clock pacing: a slow GPU drops frames, it doesn't stretch the intro
-      s.t += Math.min(dt, 0.25) * (s.skip ? 4 : 1);
+      s.t += Math.min(dt, 0.1) * (s.skip ? 4 : 1);
       if (s.skip && s.t < TIMELINE.fly + 0.15) s.t = Math.min(TIMELINE.fly + 0.15, s.t + dt * 4);
     }
     const t = s.t;
+    introClock.t = t;
 
-    // camera: gentle drift → slow push toward the source → dive through the portal
-    const drift = 1 - seg(t, TIMELINE.portal, TIMELINE.fly);
+    // camera: a slow push in, then the dive
+    const drift = 1 - seg(t, TIMELINE.birth, TIMELINE.fly);
     const dive = seg(t, TIMELINE.fly, TIMELINE.end - 0.45) ** 2;
-    const push = easeOut(seg(t, 0.2, TIMELINE.fly));
-    // narrow (portrait) screens pull back so the whole portal still fits
-    const fit = Math.max(1, 0.95 / (size.width / size.height));
-    const z = (9.5 - push * 2.4) * fit * (1 - dive) - 1.2 * dive;
-    camera.position.x = damp(camera.position.x, pointer.x * 0.45 * drift, 3, dt);
-    camera.position.y = damp(camera.position.y, pointer.y * 0.3 * drift, 3, dt);
-    camera.position.z = z;
+    const push = smooth(seg(t, 0.2, TIMELINE.fly));
+    camera.position.x = damp(camera.position.x, pointer.x * 0.35 * drift, 3, dt);
+    camera.position.y = damp(camera.position.y, pointer.y * 0.25 * drift, 3, dt);
+    camera.position.z = (9.5 - push * 2.4) * (1 - dive) - 1.2 * dive;
     camera.lookAt(0, 0, 0);
-    const fov = 50 + dive * 40;
+    const fov = 50 + dive * 36;
     if (Math.abs(camera.fov - fov) > 0.05) {
       camera.fov = fov;
       camera.updateProjectionMatrix();
     }
 
-    if (hud.current) {
-      hud.current.bar.style.transform = `scaleX(${clamp(t / TIMELINE.end, 0, 1)})`;
-      hud.current.root.style.opacity = String(1 - smooth(seg(t, TIMELINE.reveal, TIMELINE.end)));
-      hud.current.stage.style.opacity = String(1 - seg(t, TIMELINE.fly - 0.2, TIMELINE.fly + 0.5));
+    const h = hud.current;
+    if (h) {
+      h.bar.style.transform = `scaleX(${clamp(t / TIMELINE.end, 0, 1)})`;
+      h.root.style.opacity = String(1 - smooth(seg(t, TIMELINE.reveal, TIMELINE.end)));
+      h.stage.style.opacity = String(1 - seg(t, TIMELINE.fly - 0.2, TIMELINE.fly + 0.5));
+
+      // welcome wording: boot command → greeting → tagline, gone before the dive
+      typeInto(h.cmd, CMD, seg(t, 0.8, 1.9));
+      typeInto(h.title, GREETING, seg(t, 2.0, 3.1));
+      typeInto(h.sub, SUB, seg(t, 3.0, 3.7));
+      h.words.style.opacity = String(1 - smooth(seg(t, TIMELINE.fly - 0.15, TIMELINE.fly + 0.45)));
+      h.words.style.transform = `translateY(${-seg(t, TIMELINE.fly, TIMELINE.fly + 0.8) * 14}px)`;
     }
 
-    const phase = t < TIMELINE.core ? 0 : t < TIMELINE.rings + 0.5 ? 1 : t < TIMELINE.portal ? 2 : t < TIMELINE.fly ? 3 : 4;
+    const phase = t < 0.6 ? 0 : t < TIMELINE.birth + 0.5 ? 1 : t < TIMELINE.birth + 1.9 ? 2 : t < TIMELINE.fly ? 3 : 4;
     if (phase !== fired.current.phase) {
       fired.current.phase = phase;
       onPhase(phase);
@@ -554,13 +409,12 @@ export default function PortalScene({ onPhase, onReveal, onDone, hud, skipRef })
       style={{ position: 'absolute', inset: 0 }}
       dpr={[1, mobile ? 1.25 : 1.6]}
       camera={{ position: [0, 0, 9.5], fov: 50, near: 0.1, far: 80 }}
-      gl={{ antialias: !mobile, alpha: true, powerPreference: 'high-performance' }}
+      gl={{ antialias: false, alpha: false, powerPreference: 'high-performance' }}
     >
       <Rig tl={tl} onPhase={onPhase} onReveal={onReveal} onDone={onDone} hud={hud} />
-      <Dust tl={tl} count={mobile ? 450 : 1100} mobile={mobile} />
-      <Streaks tl={tl} count={mobile ? 120 : 280} />
-      <Glow tl={tl} />
-      <Source tl={tl} mobile={mobile} />
+      <BlackHole tl={tl} />
+      <Dust tl={tl} count={mobile ? 380 : 900} mobile={mobile} />
+      <Streaks tl={tl} count={mobile ? 110 : 260} />
     </Canvas>
   );
 }
