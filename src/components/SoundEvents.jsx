@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { initSound, playSound, SOUND_CONFIG } from '../lib/sound';
+import { initSound, playSound, SOUND_CONFIG, useSoundStarted } from '../lib/sound';
 
 // Interface sounds are deliberately few. In-page links get the transition sound instead of a click,
 // so a click is only for things that act in place: cards, downloads, external links, the menu, submit.
@@ -8,9 +8,11 @@ const quiet = (el) => el.closest('a[href^="#"]');
 
 /**
  * Starts the site's audio on the visitor's first gesture and wires the few interface sounds that
- * depend on pointer events. Renders nothing: there is no sound control, sound is always on.
+ * depend on pointer events. There is no sound control, sound is always on. Browsers keep audio
+ * silent until a gesture, so a quiet line says so until it begins, then goes away for good.
  */
 export default function SoundEvents() {
+  const started = useSoundStarted();
   useEffect(() => {
     initSound();
     const down = (e) => {
@@ -28,5 +30,10 @@ export default function SoundEvents() {
     };
   }, []);
 
-  return null;
+  if (started) return null;
+  return (
+    <p className="sound-hint hud-label" role="status">
+      Tap anywhere to start the sound
+    </p>
+  );
 }

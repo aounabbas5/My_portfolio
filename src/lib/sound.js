@@ -1,3 +1,5 @@
+import { useSyncExternalStore } from 'react';
+
 /**
  * The site's audio: one controller, synthesised live with the Web Audio API.
  *
@@ -66,6 +68,8 @@ const write = (k, v) => {
 };
 
 const enabled = true;
+let started = false; // audio is actually running (after the first gesture)
+const subs = new Set();
 const volume = { ...DEFAULT_VOLUMES };
 try {
   Object.assign(volume, JSON.parse(read(VOL_KEY) || '{}'));
@@ -769,6 +773,8 @@ export function initSound() {
       .then(() => {
         if (!running()) return; // still blocked: wait for the next gesture
         off();
+        started = true;
+        subs.forEach((fn) => fn());
         applyVolumes();
         startIntro();
         fadeMusicIn();
@@ -787,6 +793,18 @@ export const setMasterVolume = (v) => setVol('master', v);
 export const setMusicVolume = (v) => setVol('music', v);
 export const setEffectsVolume = (v) => setVol('effects', v);
 export const getVolumes = () => ({ ...volume });
+
+/** False until the first gesture has started the audio; drives the "tap to start" hint. */
+export function useSoundStarted() {
+  return useSyncExternalStore(
+    (fn) => {
+      subs.add(fn);
+      return () => subs.delete(fn);
+    },
+    () => started,
+    () => true
+  );
+}
 
 if (import.meta.env?.DEV && typeof window !== 'undefined') {
   window.aounSound = { setMasterVolume, setMusicVolume, setEffectsVolume, getVolumes, playSound, SOUND_CONFIG };
