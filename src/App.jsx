@@ -1,4 +1,5 @@
 import React from 'react';
+import { MotionConfig } from 'motion/react';
 import Background from './components/Background';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
@@ -14,11 +15,11 @@ import Footer from './components/Footer';
 import HandCursor from './components/HandCursor';
 import PortalIntro from './components/PortalIntro';
 import WarpTransition from './components/WarpTransition';
-import SoundToggle from './components/SoundToggle';
+import SoundEvents from './components/SoundEvents';
 
 function App() {
   return (
-    <>
+    <MotionConfig reducedMotion="user">
       <a href="#skills" className="sr-only-skip">
         Skip to content
       </a>
@@ -26,7 +27,7 @@ function App() {
       <HandCursor />
       <PortalIntro />
       <WarpTransition />
-      <SoundToggle />
+      <SoundEvents />
       <Navbar />
       <main>
         <Hero />
@@ -40,7 +41,7 @@ function App() {
         <Contact />
       </main>
       <Footer />
-    </>
+    </MotionConfig>
   );
 }
 

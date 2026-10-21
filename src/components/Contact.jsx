@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Mail, Send, MapPin, MessageSquare } from 'lucide-react';
 import { contactData } from '../data/config';
 import { useInView } from '../hooks/useInView';
+import { Reveal } from '../motion';
+import { playSound } from '../lib/sound';
 import SectionHeader from './SectionHeader';
 import { GithubIcon as Github, LinkedinIcon as Linkedin } from './icons';
 import { addRipple } from '../hooks/ripple';
@@ -40,15 +42,21 @@ export default function Contact() {
 
   const onChange = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
+  // the one section with its own cinematic reveal: its portal rings open once, with a soft shimmer
+  useEffect(() => {
+    if (isInView) playSound('section-reveal', { key: 'contact' });
+  }, [isInView]);
+
   const onSubmit = (e) => {
     e.preventDefault();
+    playSound('success');
     const subject = encodeURIComponent(form.subject || `Portfolio contact from ${form.name}`);
     const body = encodeURIComponent(`Name: ${form.name}\nEmail: ${form.email}\n\n${form.message}`);
     window.location.href = `mailto:${contactData.email}?subject=${subject}&body=${body}`;
   };
 
   return (
-    <section id="contact" ref={ref} className="relative py-20 md:py-28 px-6">
+    <section id="contact" ref={ref} className="relative overflow-x-clip py-20 md:py-28 px-6">
       {/* the connection portal: slow counter-rotating rings behind the headline */}
       <div className="gateway" aria-hidden="true" data-on={isInView}>
         <span />
@@ -59,16 +67,11 @@ export default function Contact() {
         <SectionHeader
           title={contactData.headline}
           subtitle={contactData.description}
-          isInView={isInView}
         />
 
-        <div
-          className={`grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-8 transition-all duration-700 ${
-            isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
-          }`}
-        >
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-8">
           {/* Info tiles */}
-          <div className="panel rounded-2xl p-6 md:p-7 lg:col-span-2 flex flex-col gap-4">
+          <Reveal y={28} className="panel rounded-2xl p-6 md:p-7 lg:col-span-2 flex flex-col gap-4">
             <Tile icon={Mail} label="Email" value={contactData.email} href={`mailto:${contactData.email}`} />
             {contactData.linkedin && (
               <Tile icon={Linkedin} label="LinkedIn" value={stripUrl(contactData.linkedin)} href={contactData.linkedin} />
@@ -80,10 +83,10 @@ export default function Contact() {
               <Tile icon={MessageSquare} label="WhatsApp" value="Send a message" href={contactData.whatsapp} />
             )}
             {contactData.location && <Tile icon={MapPin} label="Location" value={contactData.location} />}
-          </div>
+          </Reveal>
 
           {/* Form */}
-          <form onSubmit={onSubmit} className="panel rounded-2xl p-6 md:p-8 lg:col-span-3 space-y-4">
+          <Reveal as="form" y={28} delay={0.1} onSubmit={onSubmit} className="panel rounded-2xl p-6 md:p-8 lg:col-span-3 space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="name" className="sr-only">Your name</label>
@@ -109,7 +112,7 @@ export default function Contact() {
             <p className="text-xs text-muted/75 text-center">
               This opens your email app with the message ready to send.
             </p>
-          </form>
+          </Reveal>
         </div>
       </div>
     </section>

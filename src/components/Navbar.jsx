@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Menu, X } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import { navLinks, contactData } from '../data/config';
-import { travelTo } from '../lib/journey';
+import { travelTo, useIntroDone } from '../lib/journey';
+import { DUR, EASE } from '../motion/tokens';
 import ProfileBadge from './ProfileBadge';
 
 export default function Navbar() {
@@ -9,6 +11,7 @@ export default function Navbar() {
   const [hidden, setHidden] = useState(false);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(navLinks[0].href.slice(1));
+  const introDone = useIntroDone();
   const lastY = useRef(0);
   const bar = useRef(null);
 
@@ -88,7 +91,10 @@ export default function Navbar() {
             : 'py-5'
       }`}
     >
-      <div
+      <motion.div
+        initial={{ opacity: 0, y: -16 }}
+        animate={introDone ? { opacity: 1, y: 0 } : undefined}
+        transition={{ duration: DUR.hero, ease: EASE.out, delay: 0.15 }}
         className="max-w-6xl mx-auto px-6 flex items-center justify-between"
         style={{ paddingLeft: 'max(1.5rem, env(safe-area-inset-left))', paddingRight: 'max(1.5rem, env(safe-area-inset-right))' }}
       >
@@ -103,16 +109,21 @@ export default function Navbar() {
                 href={link.href}
                 onClick={(e) => go(e, link.href)}
                 aria-current={isActive ? 'true' : undefined}
-                className={`relative min-h-11 inline-flex items-center px-4 text-sm font-medium transition-colors ${
+                className={`nav-link relative min-h-11 inline-flex items-center px-4 text-sm font-medium transition-colors ${
                   isActive ? 'text-champagne' : 'text-muted hover:text-champagne'
                 }`}
               >
                 {link.label}
-                <span
-                  className={`absolute left-4 right-4 bottom-1.5 h-0.5 rounded-full bg-gradient-to-r from-glow to-gold transition-transform duration-300 origin-left ${
-                    isActive ? 'scale-x-100' : 'scale-x-0'
-                  }`}
-                />
+                {/* hover hint, then the active marker glides between links */}
+                <span className="nav-hint absolute left-4 right-4 bottom-1.5 h-0.5 rounded-full bg-gold/40" aria-hidden="true" />
+                {isActive && (
+                  <motion.span
+                    layoutId="nav-active"
+                    transition={{ duration: DUR.base, ease: EASE.out }}
+                    className="absolute left-4 right-4 bottom-1.5 h-0.5 rounded-full bg-gradient-to-r from-glow to-gold"
+                    aria-hidden="true"
+                  />
+                )}
               </a>
             );
           })}
@@ -133,7 +144,7 @@ export default function Navbar() {
         >
           {open ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
-      </div>
+      </motion.div>
 
       {/* scroll progress */}
       <div className="absolute inset-x-0 bottom-0 h-px bg-glow/10" aria-hidden="true">
@@ -152,10 +163,14 @@ export default function Navbar() {
       element is sized to the header instead of the screen, which made the menu
       collapse to zero height and the links spill over the page content.
     */}
+    <AnimatePresence>
     {open && (
-      <nav
+      <motion.nav
         id="mobile-menu"
         aria-label="Mobile"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1, transition: { duration: DUR.fast, ease: EASE.out } }}
+        exit={{ opacity: 0, transition: { duration: DUR.fast, ease: EASE.inOut } }}
         className="md:hidden fixed inset-0 z-40 overflow-y-auto overscroll-contain bg-ink pt-20"
         style={{
           backgroundImage:
@@ -166,10 +181,19 @@ export default function Navbar() {
           className="min-h-full flex flex-col justify-center px-6 pb-10"
           style={{ paddingLeft: 'max(1.5rem, env(safe-area-inset-left))', paddingRight: 'max(1.5rem, env(safe-area-inset-right))' }}
         >
-          <div className="mx-auto w-full max-w-sm flex flex-col gap-2 py-4">
+          <motion.div
+            initial="hidden"
+            animate="show"
+            variants={{ hidden: {}, show: { transition: { staggerChildren: 0.05, delayChildren: 0.06 } } }}
+            className="mx-auto w-full max-w-sm flex flex-col gap-2 py-4"
+          >
             {navLinks.map((link) => (
-              <a
+              <motion.a
                 key={link.href}
+                variants={{
+                  hidden: { opacity: 0, y: 14 },
+                  show: { opacity: 1, y: 0, transition: { duration: DUR.base, ease: EASE.out } },
+                }}
                 href={link.href}
                 onClick={(e) => go(e, link.href)}
                 aria-current={active === link.href.slice(1) ? 'true' : undefined}
@@ -180,17 +204,26 @@ export default function Navbar() {
                 }`}
               >
                 {link.label}
-              </a>
+              </motion.a>
             ))}
             {contactData.resume && (
-              <a href={contactData.resume} download className="btn-secondary mt-4">
+              <motion.a
+                variants={{
+                  hidden: { opacity: 0, y: 14 },
+                  show: { opacity: 1, y: 0, transition: { duration: DUR.base, ease: EASE.out } },
+                }}
+                href={contactData.resume}
+                download
+                className="btn-secondary mt-4"
+              >
                 Resume
-              </a>
+              </motion.a>
             )}
-          </div>
+          </motion.div>
         </div>
-      </nav>
+      </motion.nav>
     )}
+    </AnimatePresence>
     </>
   );
 }

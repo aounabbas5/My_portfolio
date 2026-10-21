@@ -1,8 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { Clock, ArrowUpRight } from 'lucide-react';
 import { projectsData, contactData } from '../data/config';
-import { useInView } from '../hooks/useInView';
 import { addRipple } from '../hooks/ripple';
+import { ImageReveal, Reveal } from '../motion';
 import SectionHeader from './SectionHeader';
 import Tilt from './Tilt';
 import ProjectModal from './ProjectModal';
@@ -12,10 +12,10 @@ function Preview({ project }) {
   if (project.isPlaceholder) return <Clock className="w-9 h-9 text-sage" />;
   if (project.image) {
     return (
-      <img
+      <ImageReveal
         src={project.image}
-        alt=""
-        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+        className="w-full h-full overflow-hidden"
+        imgClassName="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
       />
     );
   }
@@ -46,7 +46,7 @@ function Preview({ project }) {
   );
 }
 
-function Card({ project, index, isInView, onOpen }) {
+function Card({ project, index, onOpen }) {
   const placeholder = Boolean(project.isPlaceholder);
 
   const body = (
@@ -99,22 +99,22 @@ function Card({ project, index, isInView, onOpen }) {
     </>
   );
 
-  const delay = { transitionDelay: `${index * 100}ms` };
-  const reveal = isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8';
+  const delay = (index % 3) * 0.09;
 
   if (placeholder) {
     return (
-      <div
-        style={delay}
-        className={`flex flex-col rounded-2xl overflow-hidden border border-dashed border-glow/25 bg-white/[0.015] transition-all duration-700 ${reveal}`}
+      <Reveal
+        y={28}
+        delay={delay}
+        className="flex flex-col rounded-2xl overflow-hidden border border-dashed border-glow/25 bg-white/[0.015]"
       >
         {body}
-      </div>
+      </Reveal>
     );
   }
 
   return (
-    <div style={delay} className={`transition-all duration-700 ${reveal}`}>
+    <Reveal y={28} delay={delay}>
       <Tilt
         as="button"
         type="button"
@@ -127,28 +127,26 @@ function Card({ project, index, isInView, onOpen }) {
       >
         {body}
       </Tilt>
-    </div>
+    </Reveal>
   );
 }
 
 export default function Projects() {
-  const [ref, isInView] = useInView({ threshold: 0.08 });
   const [selected, setSelected] = useState(null);
   const close = useCallback(() => setSelected(null), []);
   const githubIsReal = contactData.github && !contactData.github.includes('your-username');
 
   return (
-    <section id="projects" ref={ref} className="py-20 md:py-28 px-6">
+    <section id="projects" className="py-20 md:py-28 px-6">
       <div className="max-w-6xl mx-auto">
         <SectionHeader
           title="Featured Projects"
           subtitle="Select a project to see the details."
-          isInView={isInView}
         />
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 items-stretch">
           {projectsData.map((project, index) => (
-            <Card key={project.id} project={project} index={index} isInView={isInView} onOpen={setSelected} />
+            <Card key={project.id} project={project} index={index} onOpen={setSelected} />
           ))}
         </div>
 

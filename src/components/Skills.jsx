@@ -3,6 +3,7 @@ import { Code, Terminal } from 'lucide-react';
 import { skillsData } from '../data/config';
 import { useInView } from '../hooks/useInView';
 import { getCapabilities } from '../hooks/useCapabilities';
+import { Reveal } from '../motion';
 import SectionHeader from './SectionHeader';
 import SceneBoundary from './SceneBoundary';
 import Tilt from './Tilt';
@@ -37,16 +38,12 @@ export default function Skills() {
         <SectionHeader
           title="Skills & Technologies"
           subtitle={enable3D ? `${touch ? 'Tap' : 'Hover'} a node to inspect it. Dashed outlines are things I am learning.` : undefined}
-          isInView={isInView}
         />
 
-        <div
-          className={`grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-stretch transition-all duration-700 delay-100 ${
-            isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
-          }`}
-        >
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-stretch">
           {/* 3D orbit (decorative; the full list is always shown beside it) */}
           {enable3D && (
+            <Reveal y={28}>
             <div ref={stage} className="panel rounded-2xl h-[22rem] md:h-[28rem] overflow-hidden" aria-hidden="true">
               <SceneBoundary>
                 <Suspense fallback={null}>
@@ -54,13 +51,15 @@ export default function Skills() {
                 </Suspense>
               </SceneBoundary>
             </div>
+            </Reveal>
           )}
 
           <div className={`flex flex-col gap-6 ${enable3D ? '' : 'lg:col-span-2'}`}>
-            {skillsData.categories.map((cat) => {
+            {skillsData.categories.map((cat, ci) => {
               const Icon = icons[cat.name] || Code;
               return (
-                <Tilt key={cat.name} max={5} className="panel rounded-2xl p-7 flex-1 flex flex-col justify-center">
+                <Reveal key={cat.name} y={28} delay={0.1 + ci * 0.1} className="flex flex-1 flex-col">
+                <Tilt max={5} className="panel rounded-2xl p-7 flex-1 flex flex-col justify-center">
                   <div className="flex items-center gap-3 mb-5">
                     <span className="clay-sm w-11 h-11 flex items-center justify-center text-gold">
                       <Icon className="w-5 h-5" />
@@ -82,6 +81,7 @@ export default function Skills() {
                     })}
                   </ul>
                 </Tilt>
+                </Reveal>
               );
             })}
           </div>

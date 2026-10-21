@@ -1,8 +1,8 @@
 import React from 'react';
 import { Download, Presentation, FlaskConical } from 'lucide-react';
 import { aboutData, skillsData, contactData, educationData } from '../data/config';
-import { useInView } from '../hooks/useInView';
 import { addRipple } from '../hooks/ripple';
+import { Reveal } from '../motion';
 import SectionHeader from './SectionHeader';
 import Tilt from './Tilt';
 
@@ -14,20 +14,16 @@ const learning = [
 ];
 
 export default function About() {
-  const [ref, isInView] = useInView({ threshold: 0.12 });
   const edu = educationData[0];
 
   return (
-    <section id="about" ref={ref} className="py-20 md:py-28 px-6">
+    <section id="about" className="py-20 md:py-28 px-6">
       <div className="max-w-6xl mx-auto">
-        <SectionHeader title="About Me" isInView={isInView} />
+        <SectionHeader title="About Me" />
 
-        <div
-          className={`grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-8 transition-all duration-700 delay-100 ${
-            isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
-          }`}
-        >
-          <Tilt max={4} className="panel rounded-2xl p-7 md:p-10 lg:col-span-3 flex flex-col">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-8">
+          <Reveal y={28} className="lg:col-span-3 flex flex-col">
+          <Tilt max={4} className="panel rounded-2xl p-7 md:p-10 flex-1 flex flex-col">
             <h3 className="font-display text-2xl font-semibold text-champagne mb-5">{aboutData.heading}</h3>
             <div className="space-y-4 text-muted text-base md:text-lg leading-relaxed">
               {aboutData.paragraphs.map((p) => (
@@ -57,8 +53,10 @@ export default function About() {
               </a>
             )}
           </Tilt>
+          </Reveal>
 
           <div className="lg:col-span-2 flex flex-col gap-6">
+            <Reveal y={28} delay={0.1} className="flex flex-1 flex-col">
             <Tilt max={6} className="panel rounded-2xl p-7 flex-1">
               <h3 className="font-display text-xl font-semibold text-champagne mb-4">Experience</h3>
               <ul className="flex flex-col gap-3">
@@ -75,8 +73,10 @@ export default function About() {
                 })}
               </ul>
             </Tilt>
+            </Reveal>
 
             {learning.length > 0 && (
+              <Reveal y={28} delay={0.2} className="flex flex-1 flex-col">
               <Tilt max={6} className="panel rounded-2xl p-7 flex-1">
                 <h3 className="font-display text-xl font-semibold text-champagne mb-4">Currently Learning</h3>
                 <ul className="flex flex-wrap gap-2">
@@ -90,6 +90,7 @@ export default function About() {
                   ))}
                 </ul>
               </Tilt>
+              </Reveal>
             )}
           </div>
         </div>

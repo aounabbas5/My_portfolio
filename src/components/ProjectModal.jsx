@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { X, ExternalLink } from 'lucide-react';
 import { addRipple } from '../hooks/ripple';
 import { lastPointer } from '../lib/journey';
+import { playSound } from '../lib/sound';
 import { GithubIcon } from './icons';
 
 export default function ProjectModal({ project, onClose }) {
@@ -10,6 +11,7 @@ export default function ProjectModal({ project, onClose }) {
   useEffect(() => {
     if (!project) return undefined;
     const opener = document.activeElement;
+    playSound('modal-open');
     document.body.style.overflow = 'hidden';
     closeBtn.current?.focus();
 

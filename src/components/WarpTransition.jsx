@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { getCapabilities } from '../hooks/useCapabilities';
 import { THEME } from '../theme';
 import { TRAVEL_EVENT, WORLDS } from '../lib/journey';
-import { warpWhoosh } from '../lib/sound';
+import { duckMusic, playSound } from '../lib/sound';
 
 /**
  * Section-to-section travel. A 2D canvas draws a short, destination-specific effect
@@ -239,7 +239,13 @@ export default function WarpTransition() {
       const world = WORLDS[id] ?? WORLDS.home;
       const fx = FX[world.fx];
       busy.current = true;
-      warpWhoosh();
+      // a section you are already standing on gets the visual but not a second sound
+      const here = el.getBoundingClientRect().top;
+      const sameSpot = window.location.hash === hash && Math.abs(here) < 80;
+      if (!sameSpot) {
+        playSound('page-transition');
+        duckMusic();
+      }
       resize();
       canvas.style.display = 'block';
       nameRef.current.textContent = world.name;
@@ -267,6 +273,7 @@ export default function WarpTransition() {
         if (!landed && p >= 0.5) {
           landed = true;
           land(hash);
+          if (!sameSpot) playSound('page-arrive');
         }
         if (p < 1) {
           raf = requestAnimationFrame(frame);

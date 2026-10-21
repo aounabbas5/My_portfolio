@@ -1,36 +1,42 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { ArrowRight, ChevronDown } from 'lucide-react';
 import { heroData, siteConfig } from '../data/config';
-import { useInView } from '../hooks/useInView';
 import { useTypewriter } from '../hooks/useTypewriter';
 import { getCapabilities } from '../hooks/useCapabilities';
 import { addRipple } from '../hooks/ripple';
 import { useIntroDone } from '../lib/journey';
+import { introClock, playSound } from '../lib/sound';
+import { HeadingReveal, Reveal, Stagger } from '../motion';
 import RobotFallback from './RobotFallback';
 import TerminalCard from './TerminalCard';
 
-const reveal = (isInView, delay = '') =>
-  `transition-all duration-700 ease-out ${delay} ${
-    isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'
-  }`;
-
 export default function Hero() {
-  const [ref, seen] = useInView({ threshold: 0.1 });
   // Hold the reveal until the portal has opened, so the hero assembles as it dissolves.
   const introDone = useIntroDone();
-  const isInView = seen && introDone;
+  const accented = useRef(false);
+  // The headline has finished arriving. Only after an intro that was actually heard, so a skipped or
+  // reduced-motion visit stays quiet.
+  const onHeadlineDone = (variant) => {
+    if (variant !== 'show' || accented.current || !introClock.sounded || introClock.skipped) return;
+    accented.current = true;
+    playSound('headline-accent');
+  };
   const typed = useTypewriter(heroData.roles);
   const { enable3D } = getCapabilities();
 
   return (
     <section
       id="home"
-      ref={ref}
       aria-label="Introduction"
       className="relative min-h-svh flex items-center px-6 pt-28 pb-24 sl:pt-20 sl:pb-8"
     >
       <div className="max-w-6xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 sl:grid-cols-2 gap-10 sl:gap-6 items-center">
-        <div className="flex flex-col items-center lg:items-start sl:items-start text-center lg:text-left sl:text-left">
+        <Stagger
+          animate={introDone ? 'show' : 'hidden'}
+          stagger={0.12}
+          delay={0.1}
+          className="flex flex-col items-center lg:items-start sl:items-start text-center lg:text-left sl:text-left"
+        >
           {/* Mobile: room for the 3D core (or CSS emblem when 3D is off) */}
           <div className="lg:hidden sl:hidden mb-4 flex justify-center" aria-hidden="true">
             {enable3D ? (
@@ -40,22 +46,33 @@ export default function Hero() {
             )}
           </div>
 
-          <p className={`hud-label mb-4 sl:mb-2 ${reveal(isInView)}`}>
+          <Reveal inherit as="p" y={14} className="hud-label mb-4 sl:mb-2">
             {heroData.greeting}
-          </p>
+          </Reveal>
 
-          <h1 className={`text-5xl sm:text-6xl xl:text-7xl sl:text-4xl font-bold leading-[1.05] text-gradient ${reveal(isInView, 'delay-100')}`}>
+          <HeadingReveal
+            as="h1"
+            onAnimationComplete={onHeadlineDone}
+            className="text-5xl sm:text-6xl xl:text-7xl sl:text-4xl font-bold leading-[1.05] text-gradient"
+          >
             {siteConfig.name}
-          </h1>
+          </HeadingReveal>
 
-          <p className={`mt-6 sl:mt-3 text-xl sm:text-2xl sl:text-lg text-champagne min-h-[2rem] ${reveal(isInView, 'delay-200')}`}>
+          <Reveal
+            inherit
+            as="p"
+            y={18}
+            className="mt-6 sl:mt-3 text-xl sm:text-2xl sl:text-lg text-champagne min-h-[2rem]"
+          >
             {heroData.prefix}{' '}
             <span className="font-semibold text-gold">{typed}</span>
             <span className="typing-cursor" aria-hidden="true" />
-          </p>
+          </Reveal>
 
-          <div
-            className={`flex flex-col sm:flex-row items-stretch gap-4 mt-10 sl:mt-5 w-full max-w-xs sm:max-w-none sm:w-auto ${reveal(isInView, 'delay-300')}`}
+          <Reveal
+            inherit
+            y={22}
+            className="flex flex-col sm:flex-row items-stretch gap-4 mt-10 sl:mt-5 w-full max-w-xs sm:max-w-none sm:w-auto"
           >
             <a href={heroData.cta.primary.href} onPointerDown={addRipple} className="btn-primary">
               <span>{heroData.cta.primary.text}</span>
@@ -64,8 +81,8 @@ export default function Hero() {
             <a href={heroData.cta.secondary.href} onPointerDown={addRipple} className="btn-secondary">
               <span>{heroData.cta.secondary.text}</span>
             </a>
-          </div>
-        </div>
+          </Reveal>
+        </Stagger>
 
         {/* Desktop: the 3D core is drawn by the background canvas on this side. */}
         <div className="hidden lg:flex sl:flex justify-center items-center min-h-[22rem] sl:min-h-0" aria-hidden="true">
